@@ -37,10 +37,13 @@ function createWindow() {
     });
 
     if (process.env.NODE_ENV === 'development') {
+        // path to your react dev tools and redux dev tools
+        /*
         const username = process.env.USERNAME || process.env.USER || process.env.LOGNAME;
         const chromeExtDir = `/Users/${username}/Library/Application\ Support/Google/Chrome/Default/Extensions`;
         BrowserWindow.addDevToolsExtension(`${chromeExtDir}/fmkadmapgofadopljbjfkapdkoienihi/3.6.0_0`);
         BrowserWindow.addDevToolsExtension(`${chromeExtDir}/lmhkpmbekcpmknklioeibfkpmmfibljd/2.17.0_0`);
+        */
 
         // Open the DevTools.
         mainWindow.webContents.openDevTools();
