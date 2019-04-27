@@ -10,6 +10,8 @@ NodeJS version 10.x or newer. Older versions should work as well, but I have onl
 - run `npm install` or `yarn install` to install the dependencies.
 - run `npm run dist:win` to compile the application for windows ( `dist:mac` for MacOS and  `dist` to compile for both).
 
+Before you ask, I coded on MacOS, hence why I compile for it as well even though the server and files are windows :).
+
 ### Parsed Events
 
 The events the app can currently understand the following events:
