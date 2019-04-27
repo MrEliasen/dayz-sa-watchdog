@@ -29,4 +29,4 @@ The events the app can currently understand the following events:
 
 ### License
 
-Released under the [GPL-3.0](https://github.com/MrEliasen/dayz-sa-server-events/blob/master/LICENSE) license.
+Released under the [GPL-3.0](https://github.com/MrEliasen/dayz-sa-watchdog/blob/master/LICENSE) license.
