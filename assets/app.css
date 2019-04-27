@@ -1,0 +1,45 @@
+* {
+    outline: 0 !important;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+}
+
+#app,
+#app > .transition-group,
+section.fix-container {
+    width: 100%;
+    height: 100%;
+}
+
+section.fix-container > div {
+    height: 100%;
+    width: 100%;
+    display: inline-block;
+}
+
+.c-main {
+    margin: 20px 10px !important;
+    height: calc(100vh - 40px) !important;
+}
+.c-main .segment {
+    overflow-y: auto !important;
+    justify-content: flex-start !important;
+    height: 79vh;
+}
+.c-main .segment p {
+    padding: 0px;
+    margin: 0px;
+    font-size: 16px;
+}
+.c-main .segment p strong {
+    color: #f00;
+}
+
+.c-configure {
+    margin: 20px 10px !important;
+    height: calc(100vh - 40px) !important;
+}
