@@ -1,7 +1,7 @@
 import React from 'react';
 import {withRouter, NavLink} from 'react-router-dom';
 import {connect} from 'react-redux';
-import {Container, Header, Button, Input, Form, Select} from 'semantic-ui-react'
+import {Container, Header, Button, Input, Form, Select, Divider} from 'semantic-ui-react'
 import storage from 'electron-json-storage';
 
 const categoryOptions = [
@@ -96,10 +96,6 @@ class Configure extends React.Component {
                     console.log(error);
                 }
 
-                this.setState({
-                    loading: false
-                });
-
                 if (redirect) {
                     this.props.history.push('/main');
                 }
@@ -124,7 +120,7 @@ class Configure extends React.Component {
                 <Header as='h2'>Settings</Header>
                 <Form loading={this.state.loading}>
                     <Form.Field>
-                        <label>Select Log File</label>
+                        <label>Select .ADM log file to track</label>
                         <Input
                             type="text"
                             placeholder="Click here to select file"
@@ -151,46 +147,53 @@ class Configure extends React.Component {
                         />
                     </Form.Field>
                     <Form.Field>
-                        <label>Discord Token</label>
+                        <label>Discord Authentication Token</label>
                         <Input defaultValue={discordToken} onChange={(e) => this.setState({discordToken: e.target.value})} type="password" placeholder="Bot authentication token" />
                     </Form.Field>
                     <Form.Group widths='equal'>
                         <Form.Field>
                             <label>Discord Server ID</label>
                             <Input defaultValue={discordServerID} onChange={(e) => this.setState({discordServerID: e.target.value})} placeholder="Bot authentication token" />
+                            <p><small>ID of the server to post in. Right-click a server in Discord and "Copy ID".</small></p>
                         </Form.Field>
                         <Form.Field>
                             <label>Discord Channel ID</label>
                             <Input defaultValue={discordChannelID} onChange={(e) => this.setState({discordChannelID: e.target.value})} placeholder="Bot authentication token" />
+                            <p><small>ID of the channel, in the above server, to post to. Right-click a channel in a Discord server and "Copy ID".</small></p>
                         </Form.Field>
                     </Form.Group>
-                    <Form.Field>
-                        <label>Tracked Event Categories (leave empty for all)</label>
-                        <Select
-                            style={{width: '95%'}}
-                            multiple
-                            options={categoryOptions}
-                            value={this.state.logEventsCategories}
-                            onChange={(e, {value}) => this.setState({logEventsCategories: value})}
-                        />
-                    </Form.Field>
-                    <Form.Field>
-                        <label>Tracked Event Types (leave empty for all)</label>
-                        <Select
-                            style={{width: '95%'}}
-                            multiple
-                            options={typeOptions}
-                            defaultValue={this.state.logEventsTypes}
-                            onChange={(e, {value}) => this.setState({logEventsTypes: value})}
-                        />
-                    </Form.Field>
-                    <Button color='blue' onClick={this.save}>Save</Button>
+                    <Form.Group widths='equal'>
+                        <Form.Field>
+                            <label>Event Categories</label>
+                            <Select
+                                style={{width: '89%'}}
+                                multiple
+                                options={categoryOptions}
+                                value={this.state.logEventsCategories}
+                                onChange={(e, {value}) => this.setState({logEventsCategories: value})}
+                            />
+                            <p><small>Select any specific event categories to track, or leave empty for all.</small></p>
+                        </Form.Field>
+                        <Form.Field>
+                            <label>Tracked Event Types</label>
+                            <Select
+                                style={{width: '89%'}}
+                                multiple
+                                options={typeOptions}
+                                defaultValue={this.state.logEventsTypes}
+                                onChange={(e, {value}) => this.setState({logEventsTypes: value})}
+                            />
+                            <p><small>Select any specific event types (sub category, eg: Player Killed + PvP) to track, or leave empty for all.</small></p>
+                        </Form.Field>
+                    </Form.Group>
+                    <Divider/>
+                    <Button floated='left' color='blue' onClick={this.save}>Save</Button>
                     {
                         logFilePath &&
                         discordToken &&
                         discordServerID &&
                         discordChannelID &&
-                        <Button color='green' onClick={() => this.save(true)}>Continue</Button>
+                        <Button floated='right' color='green' onClick={() => this.save(true)}>Save & Continue</Button>
                     }
                 </Form>
             </Container>
