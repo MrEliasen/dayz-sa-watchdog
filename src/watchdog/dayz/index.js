@@ -6,9 +6,10 @@ import readLastLines from 'read-last-lines';
  * DayZ manager
  */
 class DayZParser {
-    // since windows triggers change events multiple times
-    // we dishard any messages which are identical in succession.
-    lastmsg = '';
+    // will keep track of the last line of the file since last update cycle
+    lastLineIndex = 0;
+    // avoids duplicate update event triggers.
+    isParsing = false;
 
     /**
      * class constructor
@@ -24,22 +25,47 @@ class DayZParser {
      * Loads the component
      */
     async load() {
-        this.tailLogFile();
+        await this.tailLogFile();
     }
 
     /**
      * Reads the log file, and trails it for any changes
      * @return {Promise}
      */
-    tailLogFile() {
+    async tailLogFile() {
+        const lines = this.getFileLines();
+        this.lastLineIndex = lines.length - 1;
+
         // god damn windows and not having tail - there I fixed it
         this.watcher = fs.watch(this.server.config.logFilePath, null, (curr, prev) => {
-            readLastLines
-                .read(this.server.config.logFilePath, 1)
-                .then((lines) => this.parseLine(lines.toString().trim()));
+            if (this.isParsing) {
+                return;
+            }
+
+            this.isParsing = true;
+            this.parseEntires();
         });
 
         this.server.logger(this.name, `Watching "${this.server.config.logFilePath}" for changes.`);
+    }
+
+    getFileLines() {
+        const data = fs.readFileSync(this.server.config.logFilePath);
+        return data.toString().split('\n');
+    }
+
+    parseEntires() {
+        const lines = this.getFileLines();
+        const unparsedLines = lines.slice(this.lastLineIndex + 1);
+
+        if (unparsedLines.length) {
+            unparsedLines.forEach((line, i) => {
+                this.parseLine(line);
+            });
+        }
+
+        this.lastLineIndex = lines.length - 1;
+        this.isParsing = false;
     }
 
     /**
@@ -48,22 +74,16 @@ class DayZParser {
      * @return {Promise}       resolves to an object
      */
     async parseLine(string) {
-        if (this.lastmsg === string) {
-            return;
-        }
-
-        this.lastmsg = string;
-
-        const connectTest = /^([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\sis connected\s\(id=.+\))$/i;
-        const disconnectTest = /^([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\(id=.+\)\shas\sbeen\sdisconnected)$/i;
-        const chatTest = /^([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Chat\(")(.+)(?:"\(id=.+\):\s)(.+)$/i;
-        const damageNPCTest = /^([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\spos\=\<.+\>\)\[HP:\s)([0-9\.]+)(?:\]\shit\sby\s)(.+)(?:\s)(into.+)(?:\()(.+)(?:\))$/i;
-        const damagePlayerTest = /^([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\spos\=\<.+\>\)\[HP:\s)([0-9\.]+)(?:\]\shit\sby\sPlayer\s")(.+)(?:"\s\(id=.+\spos\=\<.+\>\)\s)(.+)(?:\s)(with.+)$/i;
-        const killedByInfectedTest = /^([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\,.+\))\skilled\sby\s(.+)$/i;
-        const killedByPlayerTest = /^([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\,.+\)\skilled\sby\s")(.+)(?:"\(.+\)\s(.+))$/i;
-        const suicideTest = /^([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\(id=.+\,.+\)\scommitted\ssuicide)$/i;
-        const bledOutTest = /^([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\,.+\)\sbled\sout)$/i;
-        const diedGenericTest = /^([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\spos=\<.+\>\)\sdied\.\sStats>\sWater:\s)([0-9\.]+)(?:\sEnergy:\s)([0-9\.]+)(?:\sBleed(?:ing)?\ssources:\s)([0-9]+)$/i;
+        const connectTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\sis connected\s\(id=.+\))/i;
+        const disconnectTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\(id=.+\)\shas\sbeen\sdisconnected)/i;
+        const chatTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Chat\(")(.+)(?:"\(id=.+\):\s)(.+)/i;
+        const damageNPCTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\spos\=\<.+\>\)\[HP:\s)([0-9\.]+)(?:\]\shit\sby\s)(.+)(?:\s)(into.+)(?:\()(.+)(?:\))/i;
+        const damagePlayerTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\spos\=\<.+\>\)\[HP:\s)([0-9\.]+)(?:\]\shit\sby\sPlayer\s")(.+)(?:"\s\(id=.+\spos\=\<.+\>\)\s)(.+)(?:\s)(with.+)/i;
+        const killedByInfectedTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\,.+\))\skilled\sby\s(.+)/i;
+        const killedByPlayerTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\,.+\)\skilled\sby\s")(.+)(?:"\(.+\)\s(.+))/i;
+        const suicideTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\(id=.+\,.+\)\scommitted\ssuicide)/i;
+        const bledOutTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\,.+\)\sbled\sout)/i;
+        const diedGenericTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\spos=\<.+\>\)\sdied\.\sStats>\sWater:\s)([0-9\.]+)(?:\sEnergy:\s)([0-9\.]+)(?:\sBleed(?:ing)?\ssources:\s)([0-9]+)/i;
 
         const wasConneted = string.match(connectTest);
 
