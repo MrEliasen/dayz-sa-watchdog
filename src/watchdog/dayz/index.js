@@ -19,14 +19,14 @@ class DayZParser {
      * Loads the component
      */
     async load() {
-        await this.tailLogFile();
+        this.tailLogFile();
     }
 
     /**
      * Reads the log file, and trails it for any changes
      * @return {Promise}
      */
-    async tailLogFile() {
+    tailLogFile() {
         // god damn windows and not having tail - there I fixed it
         this.watcher = fs.watch(this.server.config.logFilePath, (curr, prev) => {
             readLastLines

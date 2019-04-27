@@ -11,10 +11,11 @@
         <main id="app"></main>
 
         <script>
+            require('babel-register');
+            require('babel-polyfill');
+
             if (process.env.NODE_ENV === 'development') {
               // make ES6 usable
-              require('babel-register');
-              require('babel-polyfill');
               require('./src/index.js');
             } else {
               require('./compiled/index.js');
