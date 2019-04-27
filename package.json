@@ -67,12 +67,12 @@
         "rimraf": "^2.6.2"
     },
     "dependencies": {
-        "discord.js": "^11.4.2",
         "babel-polyfill": "^6.26.0",
         "babel-preset-env": "^1.7.0",
         "babel-preset-react": "^6.24.1",
         "babel-preset-stage-2": "^6.24.1",
         "babel-register": "^6.26.0",
+        "discord.js": "^11.4.2",
         "electron-json-storage": "^4.1.6",
         "react": "^16.6.3",
         "react-dom": "^16.6.3",
@@ -81,6 +81,7 @@
         "react-router-dom": "^4.3.1",
         "react-router-redux": "^4.0.8",
         "react-transition-group": "^2.5.1",
+        "read-last-lines": "^1.7.1",
         "redux": "^4.0.1",
         "redux-promise": "^0.6.0",
         "semantic-ui-react": "^0.86.0",
