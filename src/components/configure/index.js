@@ -1,4 +1,5 @@
 import React from 'react';
+import {shell} from 'electron';
 import {withRouter, NavLink} from 'react-router-dom';
 import {connect} from 'react-redux';
 import {Container, Header, Button, Input, Form, Select, Divider} from 'semantic-ui-react';
@@ -149,6 +150,7 @@ class Configure extends React.Component {
                     <Form.Field>
                         <label>Discord Authentication Token</label>
                         <Input defaultValue={discordToken} onChange={(e) => this.setState({discordToken: e.target.value})} type="password" placeholder="Bot authentication token" />
+                            <p><small>You can find it <a href="#" onClick={() => shell.openExternal('https://discordapp.com/developers/applications')}>here</a>, under the application -> bot settings.</small></p>
                     </Form.Field>
                     <Form.Group widths='equal'>
                         <Form.Field>
