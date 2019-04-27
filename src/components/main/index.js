@@ -1,7 +1,7 @@
 import React from 'react';
 import {withRouter, NavLink} from 'react-router-dom';
 import {connect} from 'react-redux';
-import {Button, Container, Segment, Divider} from 'semantic-ui-react'
+import {Button, Container, Segment, Divider} from 'semantic-ui-react';
 import storage from 'electron-json-storage';
 import Server from '../../watchdog';
 
@@ -13,7 +13,7 @@ class Main extends React.Component {
     };
 
     componentDidMount() {
-         storage.get('settings', (error, settings) => {
+        storage.get('settings', (error, settings) => {
             // create the server instance
             this.server = new Server(settings);
             // listen for logger output
@@ -29,7 +29,7 @@ class Main extends React.Component {
 
     toggleNotifications = () => {
         this.server.discord.muted = !this.server.discord.muted;
-        this.setState({muted: this.server.discord.muted})
+        this.setState({muted: this.server.discord.muted});
     }
 
     shutdown = async () => {

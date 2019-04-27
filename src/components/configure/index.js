@@ -1,7 +1,7 @@
 import React from 'react';
 import {withRouter, NavLink} from 'react-router-dom';
 import {connect} from 'react-redux';
-import {Container, Header, Button, Input, Form, Select, Divider} from 'semantic-ui-react'
+import {Container, Header, Button, Input, Form, Select, Divider} from 'semantic-ui-react';
 import storage from 'electron-json-storage';
 
 const categoryOptions = [
@@ -24,7 +24,7 @@ const categoryOptions = [
     {
         text: 'Chat message',
         value: 'chat',
-    }
+    },
 ];
 
 const typeOptions = [
@@ -47,15 +47,15 @@ const typeOptions = [
     {
         text: 'Unknown',
         value: 'unknown',
-    }
+    },
 ];
 
 class Configure extends React.Component {
     state = {
-        logFilePath: "",
-        discordToken: "",
-        discordServerID: "",
-        discordChannelID: "",
+        logFilePath: '',
+        discordToken: '',
+        discordServerID: '',
+        discordChannelID: '',
         logEventsCategories: [],
         logEventsTypes: [],
         loading: true,
@@ -70,14 +70,14 @@ class Configure extends React.Component {
         storage.get('settings', (error, settings) => {
             if (!settings) {
                 this.setState({
-                    loading: false
+                    loading: false,
                 });
                 return;
             }
 
             this.setState({
                 ...settings,
-                loading: false
+                loading: false,
             });
         });
     }
@@ -85,7 +85,7 @@ class Configure extends React.Component {
     save = (redirect = false) => {
         try {
             this.setState({
-                loading: true
+                loading: true,
             });
 
             const settings = {...this.state};
@@ -102,7 +102,7 @@ class Configure extends React.Component {
             });
         } catch (error) {
             this.setState({
-                loading: false
+                loading: false,
             });
         }
     }

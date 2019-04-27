@@ -14,7 +14,7 @@ class DiscordBot {
     constructor(server) {
         this.name = 'Discord Bot';
         this.server = server;
-        this.server.logger(this.name,`Component instantiated`);
+        this.server.logger(this.name, 'Component instantiated');
     }
 
     /**
@@ -26,7 +26,7 @@ class DiscordBot {
             this.server.logger(this.name, 'Creating client..');
             const token = this.server.config.discordToken;
 
-            if (!token || token === "") {
+            if (!token || token === '') {
                 this.server.logger(this.name, 'No token found, discord intergration disabled.');
                 resolve();
                 return;
@@ -47,8 +47,8 @@ class DiscordBot {
             });
             this.client.on('disconnect', () => {
                 this.connected = false;
-                this.server.logger(this.name, `Disconnected from server.`);
-            })
+                this.server.logger(this.name, 'Disconnected from server.');
+            });
 
             this.server.logger(this.name, 'Connecting..');
 

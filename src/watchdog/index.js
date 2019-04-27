@@ -23,7 +23,7 @@ class Watchdog extends EventEmitter {
         await this.discord.load();
         await this.dayz.load();
 
-        this.logger('server', 'Running!')
+        this.logger('server', 'Running!');
     }
 
     async logger(component, msg) {

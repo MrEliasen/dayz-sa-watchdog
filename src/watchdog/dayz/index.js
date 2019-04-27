@@ -12,7 +12,7 @@ class DayZParser {
     constructor(server) {
         this.name = 'DayZ Parser';
         this.server = server;
-        this.server.logger(this.name,`Component instantiated`);
+        this.server.logger(this.name, 'Component instantiated');
     }
 
     /**
@@ -231,46 +231,46 @@ class DayZParser {
         let message;
 
         switch (event.category) {
-            case "connect":
+            case 'connect':
                 message = `"${event.player}" Connected`;
                 break;
 
-            case "disconnect":
+            case 'disconnect':
                 message = `"${event.player}" Disconnected`;
                 break;
 
-            case "damage":
+            case 'damage':
                 switch (event.type) {
-                    case "pve":
+                    case 'pve':
                         message = `"${event.player}" (HP: ${event.hp}) was damaged ${event.damage} by NPC "${event.attacker}" with ${event.weapon}.`;
                         break;
-                    case "pvp":
+                    case 'pvp':
                         message = `"${event.player}" (HP: ${event.hp}) was damaged ${event.damage} by Player "${event.attacker}" ${event.weapon}.`;
                         break;
                 }
                 break;
 
-            case "killed":
+            case 'killed':
                 switch (event.type) {
-                    case "pve":
+                    case 'pv':
                         message = `"${event.player}" was killed by NPC "${event.killer}".`;
                         break;
-                    case "pvp":
+                    case 'pvp':
                         message = `"${event.player}" was killed by Player "${event.killer}" ${event.weapon}.`;
                         break;
-                    case "suicide":
+                    case 'suicide':
                         message = `"${event.player}" committed suicide.`;
                         break;
-                    case "bleedout":
+                    case 'bleedout':
                         message = `"${event.player}" bled out.`;
                         break;
-                    case "unknown":
+                    case 'unknown':
                         message = `"${event.player}" died from unknown causes.`;
                         break;
                 }
                 break;
 
-            case "chat":
+            case 'chat':
                 message = `"${event.player}" said: ${DOMPurify.sanitize(event.message)}`;
                 break;
         }
