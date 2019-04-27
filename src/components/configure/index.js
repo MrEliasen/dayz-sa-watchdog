@@ -59,6 +59,7 @@ class Configure extends React.Component {
         discordChannelID: '',
         logEventsCategories: [],
         logEventsTypes: [],
+        discordStatus: 'Watching you..',
         loading: true,
     };
 
@@ -114,11 +115,11 @@ class Configure extends React.Component {
             discordToken,
             discordServerID,
             discordChannelID,
+            discordStatus,
         } = this.state;
 
         return (
             <Container className="c-configure">
-                <Header as='h2'>Settings</Header>
                 <Form loading={this.state.loading}>
                     <Form.Field>
                         <label>Select .ADM log file to track</label>
@@ -147,11 +148,18 @@ class Configure extends React.Component {
                             }}
                         />
                     </Form.Field>
-                    <Form.Field>
-                        <label>Discord Authentication Token</label>
-                        <Input defaultValue={discordToken} onChange={(e) => this.setState({discordToken: e.target.value})} type="password" placeholder="Bot authentication token" />
+                    <Form.Group widths='equal'>
+                        <Form.Field>
+                            <label>Discord Authentication Token</label>
+                            <Input defaultValue={discordToken} onChange={(e) => this.setState({discordToken: e.target.value})} type="password" placeholder="Bot authentication token" />
                             <p><small>You can find it <a href="#" onClick={() => shell.openExternal('https://discordapp.com/developers/applications')}>here</a>, under the application -> bot settings.</small></p>
-                    </Form.Field>
+                        </Form.Field>
+                        <Form.Field>
+                            <label>Discord Bot Status</label>
+                            <Input defaultValue={discordStatus} onChange={(e) => this.setState({discordStatus: e.target.value})} placeholder="Enter bot status text" />
+                            <p><small>Which "game" the bot should appear to be playing.</small></p>
+                        </Form.Field>
+                    </Form.Group>
                     <Form.Group widths='equal'>
                         <Form.Field>
                             <label>Discord Server ID</label>
