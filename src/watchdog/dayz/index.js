@@ -183,6 +183,9 @@ class DayZParser {
                 timestamp: wasKilledGeneric[1],
                 player: wasKilledGeneric[2],
                 killer: 'Unknown',
+                water: wasKilledGeneric[3],
+                energy: wasKilledGeneric[4],
+                bleeds: wasKilledGeneric[5],
             });
             return;
         }
@@ -265,7 +268,7 @@ class DayZParser {
                         message = `"${event.player}" bled out.`;
                         break;
                     case 'unknown':
-                        message = `"${event.player}" died from unknown causes.`;
+                        message = `"${event.player}" died from unknown causes. Character stats time of death - Water: ${event.water}, Energy: ${event.energy} & Bleed Sources: ${event.bleeds}, `;
                         break;
                 }
                 break;
