@@ -78,9 +78,9 @@ class DayZParser {
         const disconnectTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\(id=.+\)\shas\sbeen\sdisconnected)/i;
         const chatTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Chat\(")(.+)(?:"\(id=.+\):\s)(.+)/i;
         const damageNPCTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\spos\=\<.+\>\)\[HP:\s)([0-9\.]+)(?:\]\shit\sby\s)(.+)(?:\s)(into.+)(?:\()(.+)(?:\))/i;
-        const damagePlayerTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\spos\=\<.+\>\)\[HP:\s)([0-9\.]+)(?:\]\shit\sby\sPlayer\s")(.+)(?:"\s\(id=.+\spos\=\<.+\>\)\s)(.+)(?:\s)(with.+)/i;
+        const damagePlayerTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\spos\=)(\<.+\>)(?:\)\[HP:\s)([0-9\.]+)(?:\]\shit\sby\sPlayer\s")(.+)(?:"\s\(id=.+\spos\=)(\<.+\>)(?:\)\s)(.+\sdamage)(?:\s)?(.+)?/i;
         const killedByInfectedTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\,.+\))\skilled\sby\s(.+)/i;
-        const killedByPlayerTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\,.+\)\skilled\sby\s")(.+)(?:"\(.+\)\s(.+))/i;
+        const killedByPlayerTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\spos\=)(\<.+\>)(?:\)\skilled\sby\s")(.+)(?:"\(id=.+\spos\=)(\<.+\>)(?:\)\s(.+))/i;
         const suicideTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\(id=.+\,.+\)\scommitted\ssuicide)/i;
         const bledOutTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\,.+\)\sbled\sout)/i;
         const diedGenericTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\spos=\<.+\>\)\sdied\.\sStats>\sWater:\s)([0-9\.]+)(?:\sEnergy:\s)([0-9\.]+)(?:\sBleed(?:ing)?\ssources:\s)([0-9]+)/i;
@@ -129,10 +129,12 @@ class DayZParser {
                 type: 'pvp',
                 timestamp: wasDamagedByPlayer[1],
                 player: wasDamagedByPlayer[2],
-                hp: wasDamagedByPlayer[3],
-                attacker: wasDamagedByPlayer[4],
-                damage: wasDamagedByPlayer[5],
-                weapon: wasDamagedByPlayer[6],
+                playerPos: wasDamagedByPlayer[3],
+                hp: wasDamagedByPlayer[4],
+                attacker: wasDamagedByPlayer[5],
+                attackerPos: wasDamagedByPlayer[6],
+                damage: wasDamagedByPlayer[7],
+                weapon: wasDamagedByPlayer[8] || '',
             });
             return;
         }
@@ -174,8 +176,10 @@ class DayZParser {
                 type: 'pvp',
                 timestamp: waskilledByPlayer[1],
                 player: waskilledByPlayer[2],
-                killer: waskilledByPlayer[3],
-                weapon: waskilledByPlayer[4],
+                playerPos: wasDamagedByPlayer[3],
+                killer: waskilledByPlayer[4],
+                killerPos: wasDamagedByPlayer[5],
+                weapon: waskilledByPlayer[6],
             });
             return;
         }
@@ -279,7 +283,7 @@ class DayZParser {
                         message = `"${event.player}" (HP: ${event.hp}) was damaged ${event.damage} by NPC "${event.attacker}" with ${event.weapon}.`;
                         break;
                     case 'pvp':
-                        message = `"${event.player}" (HP: ${event.hp}) was damaged ${event.damage} by Player "${event.attacker}" ${event.weapon}.`;
+                        message = `"${event.player}" (Pos: ${event.playerPos}, HP: ${event.hp}) was damaged ${event.damage} by Player "${event.attacker}" (Pos: ${event.attackerPos}) ${event.weapon}.`;
                         break;
                 }
                 break;
@@ -290,7 +294,7 @@ class DayZParser {
                         message = `"${event.player}" was killed by NPC "${event.killer}".`;
                         break;
                     case 'pvp':
-                        message = `"${event.player}" was killed by Player "${event.killer}" ${event.weapon}.`;
+                        message = `"${event.player}" (Pos: ${event.playerPos}) was killed by Player "${event.killer}" (Pos: ${event.killerPos}) ${event.weapon}.`;
                         break;
                     case 'suicide':
                         message = `"${event.player}" committed suicide.`;
