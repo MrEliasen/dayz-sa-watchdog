@@ -90,6 +90,7 @@ class DayZParser {
         const bledOutTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\,.+\)\sbled\sout)/i;
         const diedGenericTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\spos=\<.+\>\)\sdied\.\sStats>\sWater:\s)([0-9\.]+)(?:\sEnergy:\s)([0-9\.]+)(?:\sBleed(?:ing)?\ssources:\s)([0-9]+)/i;
         const consciousnessTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\spos=)(\<.+\>)(?:\)\s)(.+)/i;
+        const fallDamageTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\)\[HP:\s(.+)\]\s)(.+)/i;
 
         const wasConneted = string.match(connectTest);
 
@@ -157,6 +158,20 @@ class DayZParser {
                 attacker: wasDamagedByNPC[4],
                 damage: wasDamagedByNPC[5],
                 weapon: wasDamagedByNPC[6],
+            });
+            return;
+        }
+
+        const wasDamagedByEnvironment = string.match(fallDamageTest);
+
+        if (wasDamagedByEnvironment) {
+            this.addEvent({
+                category: 'damage',
+                type: 'environment',
+                timestamp: wasDamagedByEnvironment[1],
+                player: wasDamagedByEnvironment[2],
+                hp: wasDamagedByEnvironment[3],
+                damage: wasDamagedByEnvironment[4],
             });
             return;
         }
@@ -305,6 +320,11 @@ class DayZParser {
                     case 'pvp':
                         message = `"${event.player}" (Pos: ${event.playerPos}, HP: ${event.hp}) was damaged ${event.damage} by Player "${event.attacker}" (Pos: ${event.attackerPos}) ${event.weapon}.`;
                         break;
+                    case 'environment':
+                        message = `"${event.player}" (HP: ${event.hp}) ${event.damage}.`;
+                        break;
+                }
+                break;
 
             case 'status':
                 switch (event.type) {
