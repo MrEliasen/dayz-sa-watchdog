@@ -26,6 +26,10 @@ const categoryOptions = [
         text: 'Chat message',
         value: 'chat',
     },
+    {
+        text: 'Player Status Changes',
+        value: 'status',
+    },
 ];
 
 const typeOptions = [
@@ -44,6 +48,14 @@ const typeOptions = [
     {
         text: 'Bleedouts',
         value: 'bleedout',
+    },
+    {
+        text: 'Consciousness',
+        value: 'consciousness',
+    },
+    {
+        text: 'Environment',
+        value: 'environment',
     },
     {
         text: 'Unknown',
