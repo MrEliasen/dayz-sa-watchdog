@@ -89,6 +89,7 @@ class DayZParser {
         const suicideTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\(id=.+\,.+\)\scommitted\ssuicide)/i;
         const bledOutTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\,.+\)\sbled\sout)/i;
         const diedGenericTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\spos=\<.+\>\)\sdied\.\sStats>\sWater:\s)([0-9\.]+)(?:\sEnergy:\s)([0-9\.]+)(?:\sBleed(?:ing)?\ssources:\s)([0-9]+)/i;
+        const consciousnessTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\spos=)(\<.+\>)(?:\)\s)(.+)/i;
 
         const wasConneted = string.match(connectTest);
 
@@ -229,6 +230,20 @@ class DayZParser {
             });
             return;
         }
+
+        const consciousnessChanged = string.match(consciousnessTest);
+
+        if (consciousnessChanged) {
+            this.addEvent({
+                category: 'status',
+                type: 'consciousness',
+                timestamp: consciousnessChanged[1],
+                player: consciousnessChanged[2],
+                playerPos: consciousnessChanged[3],
+                status: consciousnessChanged[4],
+            });
+            return;
+        }
     }
 
     /**
@@ -289,6 +304,12 @@ class DayZParser {
                         break;
                     case 'pvp':
                         message = `"${event.player}" (Pos: ${event.playerPos}, HP: ${event.hp}) was damaged ${event.damage} by Player "${event.attacker}" (Pos: ${event.attackerPos}) ${event.weapon}.`;
+                        break;
+
+            case 'status':
+                switch (event.type) {
+                    case 'consciousness':
+                        message = `"${event.player}" (Pos: ${event.playerPos}) ${event.status}.`;
                         break;
                 }
                 break;
