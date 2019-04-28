@@ -56,6 +56,11 @@ class DayZParser {
 
     parseEntires() {
         const lines = this.getFileLines();
+
+        if (lines < this.lastLineIndex) {
+            this.lastLineIndex = 0;
+        }
+
         const unparsedLines = lines.slice(this.lastLineIndex + 1);
 
         if (unparsedLines.length) {
