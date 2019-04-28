@@ -336,7 +336,7 @@ class DayZParser {
 
             case 'killed':
                 switch (event.type) {
-                    case 'pv':
+                    case 'pve':
                         message = `"${event.player}" was killed by NPC "${event.killer}".`;
                         break;
                     case 'pvp':
