@@ -21,10 +21,12 @@ The events the app can currently understand the following events:
 - Chat messages
 - Damage to player from NPC
 - Damage to player from Player
+- Damage to player from fall damage/environment
 - Player killed by NPC
 - Player killed by player
 - Player suicide
 - Player bled out
+- Player conscious changes
 - Player killed (generic/unknown)
 
 ### License
