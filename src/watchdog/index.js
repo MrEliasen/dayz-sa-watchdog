@@ -1,5 +1,6 @@
 import EventEmitter from 'events';
 import moment from 'moment';
+import {remote} from 'electron';
 import DayZ from './dayz';
 import Discord from './discord';
 
@@ -17,6 +18,8 @@ class Watchdog extends EventEmitter {
      * @return {Promise}
      */
     async init() {
+        this.logger('server', `${remote.app.getName()} v${remote.app.getVersion()}`);
+
         // application components for functionality
         this.discord = new Discord(this);
         this.dayz = new DayZ(this);
