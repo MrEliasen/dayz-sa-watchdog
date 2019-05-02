@@ -1,6 +1,11 @@
 import fs from 'fs';
 import uuid from 'uuid/v4';
 import readLastLines from 'read-last-lines';
+import createDOMPurify from 'dompurify';
+import {JSDOM} from 'jsdom';
+
+const window = (new JSDOM('')).window;
+const DOMPurify = createDOMPurify(window);
 
 /**
  * DayZ manager
