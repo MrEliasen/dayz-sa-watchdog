@@ -109,18 +109,18 @@ class DayZParser {
      * @param  {String} string A line in the log file
      * @return {Promise}       resolves to an object
      */
-    async parseLine(string) {
+    parseLine(string) {
         const connectTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\sis connected\s\(id=.+\))/i;
         const disconnectTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\(id=.+\)\shas\sbeen\sdisconnected)/i;
-        const chatTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Chat\(")(.+)(?:"\(id=.+\):\s)(.+)/i;
-        const damageNPCTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\spos\=\<.+\>\)\[HP:\s)([0-9\.]+)(?:\]\shit\sby\s)(.+)(?:\s)(into.+)(?:\()(.+)(?:\))/i;
-        const damagePlayerTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\spos\=)(\<.+\>)(?:\)\[HP:\s)([0-9\.]+)(?:\]\shit\sby\sPlayer\s")(.+)(?:"\s\(id=.+\spos\=)(\<.+\>)(?:\)\s)(.+\sdamage)(?:\s)?(.+)?/i;
-        const killedByInfectedTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\,.+\))\skilled\sby\s(.+)/i;
-        const killedByPlayerTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\spos\=)(\<.+\>)(?:\)\skilled\sby\s")(.+)(?:"\(id=.+\spos\=)(\<.+\>)(?:\)\s(.+))/i;
-        const suicideTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\(id=.+\,.+\)\scommitted\ssuicide)/i;
+        const chatTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s\[)([0-9\.\s]+)(?:\]\s\[Chat\]\s)(.+)(?:\(.+\)\s)(.+)/i;
+        const damageNPCTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\spos\=\<.+\>\)\[HP:\s)([0-9\.]+)(?:\]\shit\sby\s(?!player))(.+)(?:\s)(into.+)(?:\()(.+)(?:\))/i;
+        const damagePlayerTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"(?:\s\(dead\))?\s\(id=.+\spos\=)(\<.+\>)(?:\)\[HP:\s)([0-9\.]+)(?:\]\shit\sby\sPlayer\s")(.+)(?:"\s\(id=.+\spos\=)(\<.+\>)(?:\)\s)(.+\sdamage)(?:\s)?(.+)?/i;
+        const killedByInfectedTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\,.+\))\skilled\sby\s(?!player)(.+)/i;
+        const killedByPlayerTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\spos\=)(\<.+\>)(?:\)\skilled\sby\sPlayer\s")(.+)(?:".+\(.+pos=(<.+>)\)\s)(.+)/i;
+        const suicideTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s(?:"|'))(.+)(?:(?:"|')\s\(id=.+\)\scommitted\ssuicide)/i;
         const bledOutTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\,.+\)\sbled\sout)/i;
         const diedGenericTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\spos=\<.+\>\)\sdied\.\sStats>\sWater:\s)([0-9\.]+)(?:\sEnergy:\s)([0-9\.]+)(?:\sBleed(?:ing)?\ssources:\s)([0-9]+)/i;
-        const consciousnessTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\spos=)(\<.+\>)(?:\)\s)(.+)/i;
+        const consciousnessTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\spos=)(\<.+\>)(?:\)\s)(is unconscious|regained consciousness)/i;
         const fallDamageTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\)\[HP:\s(.+)\]\s)(.+)/i;
 
         const wasConneted = string.match(connectTest);
@@ -132,7 +132,6 @@ class DayZParser {
                 player: wasConneted[2],
                 id: uuid,
             });
-            this.events = this.events.slice(0, 1000);
             return;
         }
 
@@ -153,8 +152,9 @@ class DayZParser {
             this.addEvent({
                 category: 'chat',
                 timestamp: wasChatMessage[1],
-                player: wasChatMessage[2],
-                message: wasChatMessage[3],
+                datestamp: wasChatMessage[2],
+                player: wasChatMessage[3],
+                message: wasChatMessage[4],
             });
             return;
         }
@@ -228,9 +228,9 @@ class DayZParser {
                 type: 'pvp',
                 timestamp: waskilledByPlayer[1],
                 player: waskilledByPlayer[2],
-                playerPos: wasDamagedByPlayer[3],
+                playerPos: waskilledByPlayer[3],
                 killer: waskilledByPlayer[4],
-                killerPos: wasDamagedByPlayer[5],
+                killerPos: waskilledByPlayer[5],
                 weapon: waskilledByPlayer[6],
             });
             return;
