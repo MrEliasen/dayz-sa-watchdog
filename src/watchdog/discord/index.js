@@ -41,7 +41,7 @@ class DiscordBot {
                 this.guild = this.client.guilds.get(this.server.config.discordServerID);
                 this.channel = this.guild.channels.get(this.server.config.discordChannelID);
 
-                this.client.user.setGame(this.server.config.discordStatus || 'Cat & Mouse');
+                this.client.user.setActivity(this.server.config.discordStatus || 'Cat & Mouse');
 
                 this.server.logger(this.name, `Connected to server "${this.guild.name}"`);
                 this.server.logger(this.name, `Target channel is "${this.channel.name}"`);
