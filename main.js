@@ -6,7 +6,7 @@ if (process.env.NODE_ENV === 'development') {
     require('electron-reload')(__dirname);
 }
 
-process.on('uncaughtException', function (error) {
+process.on('uncaughtException', function(error) {
     console.log(error);
 });
 
