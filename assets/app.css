@@ -38,6 +38,9 @@ section.fix-container > div {
 .c-main .segment p strong {
     color: #f00;
 }
+.c-main .segment p strong.timestamp {
+    color: #3531ff;
+}
 
 .c-configure {
     margin: 20px 10px !important;

@@ -49,7 +49,7 @@ class Main extends React.Component {
                                 return <Divider key={index} horizontal>{log.msg}</Divider>;
                             }
 
-                            return <p key={index}><strong>[{log.component}]</strong>: <span>{log.msg}</span></p>;
+                            return <p key={index}><strong className="timestamp">[{log.timestamp}]</strong><strong>[{log.component}]</strong>: <span>{log.msg}</span></p>;
                         })
                     }
                 </Segment>

@@ -1,4 +1,5 @@
 import EventEmitter from 'events';
+import moment from 'moment';
 import DayZ from './dayz';
 import Discord from './discord';
 
@@ -27,7 +28,11 @@ class Watchdog extends EventEmitter {
     }
 
     async logger(component, msg) {
-        this.emit('console', {component, msg});
+        this.emit('console', {
+            timestamp: moment().format('MM/DD hh:mm a'),
+            component,
+            msg,
+        });
     }
 
     async shutdown() {
