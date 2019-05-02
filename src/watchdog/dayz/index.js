@@ -59,7 +59,7 @@ class DayZParser {
             // when the server creates a new log file, reset last line index
             if (event === 'rename') {
                 this.server.logger(this.name, 'Server restart or file replacement detected. Resetting line counter.');
-                this.lastLineIndex = 0;
+                this.server.discord.sendSystemMessage('Server restart/log file replacement detected.');
             }
 
             this.readFileChanges();

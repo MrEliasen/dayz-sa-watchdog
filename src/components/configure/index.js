@@ -2,7 +2,7 @@ import React from 'react';
 import {shell} from 'electron';
 import {withRouter, NavLink} from 'react-router-dom';
 import {connect} from 'react-redux';
-import {Container, Header, Button, Input, Form, Select, Divider} from 'semantic-ui-react';
+import {Container, Header, Button, Input, Form, Select, Divider, Checkbox} from 'semantic-ui-react';
 import storage from 'electron-json-storage';
 
 const categoryOptions = [
@@ -63,6 +63,15 @@ const typeOptions = [
     },
 ];
 
+
+function isEmpty(value) {
+    if (!value || value === '') {
+        return true;
+    }
+
+    return false;
+}
+
 class Configure extends React.Component {
     state = {
         logFilePath: '',
@@ -72,6 +81,7 @@ class Configure extends React.Component {
         logEventsCategories: [],
         logEventsTypes: [],
         discordStatus: 'Watching you..',
+        postSystenEvents: false,
         loading: true,
     };
 
@@ -128,13 +138,14 @@ class Configure extends React.Component {
             discordServerID,
             discordChannelID,
             discordStatus,
+            postSystenEvents,
         } = this.state;
 
         return (
             <Container className="c-configure">
                 <Form loading={this.state.loading}>
                     <Form.Field>
-                        <label>Select .ADM log file to track</label>
+                        <label>*Select .ADM log file to track</label>
                         <Input
                             type="text"
                             placeholder="Click here to select file"
@@ -162,7 +173,7 @@ class Configure extends React.Component {
                     </Form.Field>
                     <Form.Group widths='equal'>
                         <Form.Field>
-                            <label>Discord Authentication Token</label>
+                            <label>*Discord Authentication Token</label>
                             <Input defaultValue={discordToken} onChange={(e) => this.setState({discordToken: e.target.value})} type="password" placeholder="Bot authentication token" />
                             <p><small>You can find it <a href="#" onClick={() => shell.openExternal('https://discordapp.com/developers/applications')}>here</a>, under the application -> bot settings.</small></p>
                         </Form.Field>
@@ -174,12 +185,12 @@ class Configure extends React.Component {
                     </Form.Group>
                     <Form.Group widths='equal'>
                         <Form.Field>
-                            <label>Discord Server ID</label>
+                            <label>*Discord Server ID</label>
                             <Input defaultValue={discordServerID} onChange={(e) => this.setState({discordServerID: e.target.value})} placeholder="Bot authentication token" />
                             <p><small>ID of the server to post in. Right-click a server in Discord and "Copy ID".</small></p>
                         </Form.Field>
                         <Form.Field>
-                            <label>Discord Channel ID</label>
+                            <label>*Discord Channel ID</label>
                             <Input defaultValue={discordChannelID} onChange={(e) => this.setState({discordChannelID: e.target.value})} placeholder="Bot authentication token" />
                             <p><small>ID of the channel, in the above server, to post to. Right-click a channel in a Discord server and "Copy ID".</small></p>
                         </Form.Field>
@@ -208,15 +219,25 @@ class Configure extends React.Component {
                             <p><small>Select any specific event types (sub category, eg: Player Killed + PvP) to track, or leave empty for all.</small></p>
                         </Form.Field>
                     </Form.Group>
-                    <Divider/>
-                    <Button floated='left' color='blue' onClick={this.save}>Save</Button>
-                    {
-                        logFilePath &&
-                        discordToken &&
-                        discordServerID &&
-                        discordChannelID &&
-                        <Button floated='right' color='green' onClick={() => this.save(true)}>Save & Continue</Button>
-                    }
+                    <Form.Group widths='equal'>
+                        <Form.Field>
+                            <Checkbox
+                                label="Post DayZ Watchdog Events"
+                                onChange={() => this.setState({postSystenEvents: !postSystenEvents})}
+                                checked={postSystenEvents}
+                                toggle
+                            />
+                            <p><small>Post a message when the app connects, when it detects a server restart, and similar key events in Discord.</small></p>
+                        </Form.Field>
+                        <Form.Field>
+                            <Button
+                                floated='right'
+                                color='green'
+                                onClick={this.save}
+                                disabled={(isEmpty(logFilePath) || isEmpty(discordToken) || isEmpty(discordServerID) || isEmpty(discordChannelID))}
+                            >Save & Continue</Button>
+                        </Form.Field>
+                    </Form.Group>
                 </Form>
             </Container>
         );

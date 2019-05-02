@@ -1,4 +1,5 @@
 import Discord from 'discord.js';
+import {remote} from 'electron';
 
 /**
  * DiscordBot manager
@@ -45,8 +46,10 @@ class DiscordBot {
 
                 this.server.logger(this.name, `Connected to server "${this.guild.name}"`);
                 this.server.logger(this.name, `Target channel is "${this.channel.name}"`);
+                this.sendSystemMessage(`v${remote.app.getVersion()} connected.`);
                 resolve();
             });
+
             this.client.on('disconnect', () => {
                 this.connected = false;
                 this.server.logger(this.name, 'Disconnected from server.');
@@ -68,7 +71,19 @@ class DiscordBot {
             return;
         }
 
-        this.channel.send(message.split('"').join('**'));
+        this.channel
+            .send(message.split('"').join('**'))
+            .catch(console.error);
+    }
+
+    sendSystemMessage(message) {
+        if (!this.server.config.postSystenEvents) {
+            return;
+        }
+
+        this.channel
+            .send(message, {code: true})
+            .catch(console.error);
     }
 }
 
