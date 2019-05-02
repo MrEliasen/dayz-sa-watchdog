@@ -14,7 +14,13 @@ class DayZParser {
     // will keep track of the last line of the file since last update cycle
     lastLineIndex = 0;
     // avoids duplicate update event triggers.
+    isReadingChanges = false;
+    // will parse one event object at the time,
+    // this will keep track of whether we are parsing one already
+    // avoids mixing up the event ordet, hopefully.
     isParsing = false;
+    // keeps track of all unparsed lines
+    unparsedLines = [];
 
     /**
      * class constructor
@@ -31,6 +37,7 @@ class DayZParser {
      */
     async load() {
         await this.tailLogFile();
+        this.parserTimer = setInterval(this.parseFileChanges, 3000);
     }
 
     /**
@@ -42,13 +49,20 @@ class DayZParser {
         this.lastLineIndex = lines.length - 1;
 
         // god damn windows and not having tail - there I fixed it
-        this.watcher = fs.watch(this.server.config.logFilePath, null, (curr, prev) => {
-            if (this.isParsing) {
+        this.watcher = fs.watch(this.server.config.logFilePath, null, (event, filename) => {
+            if (this.isReadingChanges) {
                 return;
             }
 
-            this.isParsing = true;
-            this.parseEntires();
+            this.isReadingChanges = true;
+
+            // when the server creates a new log file, reset last line index
+            if (event === 'rename') {
+                this.server.logger(this.name, 'Server restart or file replacement detected. Resetting line counter.');
+                this.lastLineIndex = 0;
+            }
+
+            this.readFileChanges();
         });
 
         this.server.logger(this.name, `Watching "${this.server.config.logFilePath}" for changes.`);
@@ -59,22 +73,34 @@ class DayZParser {
         return data.toString().split('\n');
     }
 
-    parseEntires() {
+    readFileChanges = () => {
         const lines = this.getFileLines();
-
-        if (lines < this.lastLineIndex) {
-            this.lastLineIndex = 0;
-        }
-
         const unparsedLines = lines.slice(this.lastLineIndex + 1);
 
         if (unparsedLines.length) {
-            unparsedLines.forEach((line, i) => {
-                this.parseLine(line);
-            });
+            this.unparsedLines.push(unparsedLines);
         }
 
         this.lastLineIndex = lines.length - 1;
+        this.isReadingChanges = false;
+    }
+
+    parseFileChanges = () => {
+        if (this.isParsing) {
+            return;
+        }
+
+        if (!this.unparsedLines.length) {
+            return;
+        }
+
+        this.isParsing = true;
+        const eventList = this.unparsedLines.splice(0, 1);
+
+        eventList[0].forEach((line) => {
+            this.parseLine(line);
+        });
+
         this.isParsing = false;
     }
 
