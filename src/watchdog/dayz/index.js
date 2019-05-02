@@ -44,8 +44,20 @@ class DayZParser {
      * Reads the log file, and trails it for any changes
      * @return {Promise}
      */
-    async tailLogFile() {
-        const lines = this.getFileLines();
+    tailLogFile = async () => {
+        const fileExists = fs.existsSync(this.server.config.logFilePath);
+
+        if (!fileExists) {
+            setTimeout(this.tailLogFile, 2500);
+            return;
+        }
+
+        const lines = await this.getFileLines();
+        if (lines === null) {
+            setTimeout(this.tailLogFile, 2500);
+            return;
+        }
+
         this.lastLineIndex = lines.length - 1;
 
         // god damn windows and not having tail - there I fixed it
@@ -58,8 +70,12 @@ class DayZParser {
 
             // when the server creates a new log file, reset last line index
             if (event === 'rename') {
-                this.server.logger(this.name, 'Server restart or file replacement detected. Resetting line counter.');
+                this.server.logger(this.name, 'Server restart or log file replacement detected. Resetting line counter and setting up new watcher..');
                 this.server.discord.sendSystemMessage('Server restart/log file replacement detected.');
+                this.watcher.close();
+                this.tailLogFile();
+                this.isReadingChanges = false;
+                return;
             }
 
             this.readFileChanges();
@@ -68,13 +84,36 @@ class DayZParser {
         this.server.logger(this.name, `Watching "${this.server.config.logFilePath}" for changes.`);
     }
 
-    getFileLines() {
-        const data = fs.readFileSync(this.server.config.logFilePath);
-        return data.toString().split('\n');
+    getFileLines = async () => {
+        return new Promise((resolve) => {
+            const data = fs.readFile(this.server.config.logFilePath, (err, data) => {
+                if (err) {
+                    this.server.logger(this.name, `Unable to read file "${this.server.config.logFilePath}".`);
+                    return resolve(null);
+                }
+
+                const lines = data.toString().split('\n');
+                resolve(lines);
+            });
+        });
     }
 
-    readFileChanges = () => {
-        const lines = this.getFileLines();
+    readFileChanges = async () => {
+        const lines = await this.getFileLines();
+
+        if (lines === null) {
+            return;
+        }
+
+        // to avoid a bug on windows where GetFileLines would
+        // sometimes return empty on large files. We ignore any changes
+        // when the lines are less than current indexed number of lines.
+        // The lastLineIndex will only be reset when a watcher is recreated.
+        if (lines < this.lastLineIndex) {
+            this.isReadingChanges = false;
+            return;
+        }
+
         const unparsedLines = lines.slice(this.lastLineIndex + 1);
 
         if (unparsedLines.length) {
