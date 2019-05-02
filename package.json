@@ -10,7 +10,7 @@
         "build": "npm run build:clean && npm run build:src",
         "pack": "cross-env ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES=true npm run build && electron-builder --dir",
         "dist": "npm run build && npm run dist:win",
-        "dist:win": "cross-env ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES=true electron-builder -w",
+        "dist:win": "cross-env ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES=true electron-builder -w"
     },
     "license": "GPL-3.0",
     "repository": "https://github.com/MrEliasen/dayz-sa-watchdog",
