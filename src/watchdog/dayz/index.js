@@ -80,7 +80,7 @@ class DayZParser {
                 this.import(file);
             });
 
-        this.server.logger(this.name, `Watching .ADM files in the "${this.server.config.logFileDirectory}" directory for changes.`);
+        this.server.logger(this.name, `Tracking .ADM files in the "${this.server.config.logFileDirectory}" directory.`);
         setTimeout(() => this.loaded = true, 2000);
     }
 
