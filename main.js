@@ -22,8 +22,8 @@ function createWindow() {
             experimentalFeatures: false,
             allowpopups: false,
         },
-        width: 800,
-        height: 600,
+        width: 1280,
+        height: 720,
         resizable: false,
         icon: path.join(__dirname, 'assets/icons/png/64x64.png'),
     });
