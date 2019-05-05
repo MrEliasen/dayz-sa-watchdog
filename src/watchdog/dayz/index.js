@@ -1,4 +1,7 @@
 import fs from 'fs';
+import path from 'path';
+import chokidar from 'chokidar';
+import Bookshelf from 'bookshelf';
 import uuid from 'uuid/v4';
 import readLastLines from 'read-last-lines';
 import createDOMPurify from 'dompurify';
@@ -7,18 +10,27 @@ import {JSDOM} from 'jsdom';
 const window = (new JSDOM('')).window;
 const DOMPurify = createDOMPurify(window);
 
+// event parser tests
+const TEST_CONNECTED = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\sis connected\s\(id=.+\))/i;
+const TEST_DISCONNECTED = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\(id=.+\)\shas\sbeen\sdisconnected)/i;
+const TEST_CHAT = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s\[)([0-9\.\s]+)(?:\]\s\[Chat\]\s)(.+)(?:\(.+\)\s)(.+)/i;
+const TEST_DAMAGE_NPC = /(?:([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" \(id=(.+) pos\=\<(.+)\>\)\[HP: ([0-9\.]+)\] hit by (?!player)(.+) (into.+) for ([0-9.]+) damage \((.+)\))/i;
+const TEST_DAMAGE_PLAYER = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+"(?: \(dead\))? \(id=(.+) pos\=\<(.+)\>\)\[HP: ([0-9\.]+)\] hit by Player ".+" \(id=(.+) pos\=\<(.+)\>\) (.+) for (.+) damage (.+ with [\w\s]+(?=from (.+) meters)|.+)/i;
+const TEST_KILLED_BY_NPC = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\,.+\))\skilled\sby\s(?!player)(.+)/i;
+const TEST_KILLED_BY_PLAYER = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\spos\=)(\<.+\>)(?:\)\skilled\sby\sPlayer\s")(.+)(?:".+\(.+pos=(<.+>)\)\s)(.+)/i;
+const TEST_SUICIDE = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s(?:"|'))(.+)(?:(?:"|')\s\(id=.+\)\scommitted\ssuicide)/i;
+const TEST_BLED_OUT = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\,.+\)\sbled\sout)/i;
+const TEST_DIED_GENERIC = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\spos=\<.+\>\)\sdied\.\sStats>\sWater:\s)([0-9\.]+)(?:\sEnergy:\s)([0-9\.]+)(?:\sBleed(?:ing)?\ssources:\s)([0-9]+)/i;
+const TEST_CONSCIOUSNESS = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\spos=)(\<.+\>)(?:\)\s)(is unconscious|regained consciousness)/i;
+const TEST_FALL_DAMAGE = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\)\[HP:\s(.+)\]\s)(.+)/i;
+
 /**
  * DayZ manager
  */
 class DayZParser {
+    loaded = false;
     // will keep track of the last line of the file since last update cycle
     lastLineIndex = 0;
-    // avoids duplicate update event triggers.
-    isReadingChanges = false;
-    // will parse one event object at the time,
-    // this will keep track of whether we are parsing one already
-    // avoids mixing up the event ordet, hopefully.
-    isParsing = false;
     // keeps track of all unparsed lines
     unparsedLines = [];
 
@@ -37,7 +49,6 @@ class DayZParser {
      */
     async load() {
         await this.tailLogFile();
-        this.parserTimer = setInterval(this.parseFileChanges, 3000);
     }
 
     /**
@@ -45,102 +56,128 @@ class DayZParser {
      * @return {Promise}
      */
     tailLogFile = async () => {
-        const fileExists = fs.existsSync(this.server.config.logFilePath);
+        const dirExists = fs.existsSync(this.server.config.logFileDirectory);
 
-        if (!fileExists) {
-            setTimeout(this.tailLogFile, 2500);
+        if (!dirExists) {
+            this.server.logger(this.name, 'The directory you specified in your settings is unreadable.');
             return;
         }
 
-        const lines = await this.getFileLines();
-        if (lines === null) {
-            setTimeout(this.tailLogFile, 2500);
-            return;
-        }
+        this.watcher = chokidar.watch(this.server.config.logFileDirectory + '/*.ADM');
+        this.watcher
+            .on('add', (filePath, stats) => {
+                const filePieces = filePath.split(path.sep);
+                const file = filePieces[filePieces.length - 1];
 
-        this.lastLineIndex = lines.length - 1;
-
-        // god damn windows and not having tail - there I fixed it
-        this.watcher = fs.watch(this.server.config.logFilePath, null, (event, filename) => {
-            if (this.isReadingChanges) {
-                return;
-            }
-
-            this.isReadingChanges = true;
-
-            // when the server creates a new log file, reset last line index
-            if (event === 'rename') {
-                this.server.logger(this.name, 'Server restart or log file replacement detected. Resetting line counter and setting up new watcher..');
-                this.server.discord.sendSystemMessage('Server restart/log file replacement detected.');
-                this.watcher.close();
-                this.tailLogFile();
-                this.isReadingChanges = false;
-                return;
-            }
-
-            this.readFileChanges();
-        });
-
-        this.server.logger(this.name, `Watching "${this.server.config.logFilePath}" for changes.`);
-    }
-
-    getFileLines = async () => {
-        return new Promise((resolve) => {
-            const data = fs.readFile(this.server.config.logFilePath, (err, data) => {
-                if (err) {
-                    this.server.logger(this.name, `Unable to read file "${this.server.config.logFilePath}".`);
-                    return resolve(null);
+                if (file === 'DayZServer_x64.ADM') {
+                    if (this.loaded) {
+                        this.server.logger(this.name, 'Server restart detected.');
+                        this.server.discord.sendSystemMessage('Server restart detected.');
+                    }
+                    return;
                 }
 
-                const lines = data.toString().split('\n');
-                resolve(lines);
+                this.import(file);
             });
+            /*.on('change', (event, filePath) => {
+                const filePath = filePath.split(filePath.sep);
+                const file = filePath[filePath.length - 1];
+
+                if (file !== 'DayZServer_x64.ADM') {
+                    return;
+                }
+            });*/
+
+        this.server.logger(this.name, `Watching .ADM files in the "${this.server.config.logFileDirectory}" directory for changes.`);
+        setTimeout(() => this.loaded = true, 2000);
+    }
+
+    async import(filename) {
+        this.server.database.models.logs
+            .where('file_name', filename)
+            .fetch()
+            .then(function(model) {
+                if (model) {
+                    return;
+                }
+
+                this.importLogFile()
+            }).catch(function(err) {
+                console.error(err);
+            });
+    }
+
+    importLogFile(filename) {
+        fs.readFile(`${this.server.config.logFileDirectory}/${filename}`, (err, data) => {
+            if (err) {
+                this.server.logger(this.name, `Unable to read file "${this.server.config.logFileDirectory}".`);
+                return;
+            }
+
+            const lines = data.toString().split('\n');
+
+            if (!lines.length <= 0) {
+                return;
+            }
+
+            const t0 = performance.now();
+            this.server.logger(this.name, `Importing "${filename}"..`);
+
+            Bookshelf.transaction(function(t) {
+                return this.server.database.models.logs
+                    .create({
+                        file_name: filename,
+                    })
+                    .save(null, {transacting: t})
+                    .tap((model) => {
+                        const parsedLines = lines.map(() => this.getLineEvent(line));
+                        const linesToImport = parsedLines.filter((line) => line);
+
+                        return Promise.map([
+                                {title: 'Canterbury Tales'},
+                                {title: 'Moby Dick'},
+                                {title: 'Hamlet'}
+                          ], function(info) {
+                                // Some validation could take place here.
+                                return new Book(info).save({'shelf_id': model.id}, {transacting: t});
+                          });
+
+                        const lineImports = lines.map(() => this.parseLine(line));
+                        await Promise.all(lineImports);
+                    });
+            });
+
+            const t1 = performance.now();
+
+            this.server.logger(this.name, `Import of "${filename}" complete! Took ${(t1 - t0)/1000} seconds.`);
+            (t1 - t0)
         });
     }
 
-    readFileChanges = async () => {
-        const lines = await this.getFileLines();
+    getLineEvent(line) {
+        const parsedLine = this.parseLine(line);
+        const categoriesToLog = this.server.config.logEventsCategories;
+        const typesToLog = this.server.config.logEventsTypes;
 
-        if (lines === null) {
-            return;
+        if (!line) {
+            return null;
         }
 
-        // to avoid a bug on windows where GetFileLines would
-        // sometimes return empty on large files. We ignore any changes
-        // when the lines are less than current indexed number of lines.
-        // The lastLineIndex will only be reset when a watcher is recreated.
-        if (lines < this.lastLineIndex) {
-            this.isReadingChanges = false;
-            return;
+        // if specific event categories are specified
+        // we only want to log events matching them.
+        if (categoriesToLog.length) {
+            if (!categoriesToLog.includes(event.category)) {
+                return null;
+            }
         }
 
-        const unparsedLines = lines.slice(this.lastLineIndex + 1);
-
-        if (unparsedLines.length) {
-            this.unparsedLines.push(unparsedLines);
+        // if specific event types are specified
+        // we only want to log events matching them.
+        if (typesToLog.length) {
+            if (!event.type || !typesToLog.includes(event.type)) {
+                return null;
+            }
         }
-
-        this.lastLineIndex = lines.length - 1;
-        this.isReadingChanges = false;
-    }
-
-    parseFileChanges = () => {
-        if (this.isParsing) {
-            return;
-        }
-
-        if (!this.unparsedLines.length) {
-            return;
-        }
-
-        this.isParsing = true;
-        const eventList = this.unparsedLines.splice(0, 1);
-
-        eventList[0].forEach((line) => {
-            this.parseLine(line);
-        });
-
-        this.isParsing = false;
     }
 
     /**
@@ -149,120 +186,72 @@ class DayZParser {
      * @return {Promise}       resolves to an object
      */
     parseLine(string) {
-        const connectTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\sis connected\s\(id=.+\))/i;
-        const disconnectTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\(id=.+\)\shas\sbeen\sdisconnected)/i;
-        const chatTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s\[)([0-9\.\s]+)(?:\]\s\[Chat\]\s)(.+)(?:\(.+\)\s)(.+)/i;
-        const damageNPCTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\spos\=\<.+\>\)\[HP:\s)([0-9\.]+)(?:\]\shit\sby\s(?!player))(.+)(?:\s)(into.+)(?:\()(.+)(?:\))/i;
-        const damagePlayerTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"(?:\s\(dead\))?\s\(id=.+\spos\=)(\<.+\>)(?:\)\[HP:\s)([0-9\.]+)(?:\]\shit\sby\sPlayer\s")(.+)(?:"\s\(id=.+\spos\=)(\<.+\>)(?:\)\s)(.+\sdamage)(?:\s)?(.+)?/i;
-        const killedByInfectedTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\,.+\))\skilled\sby\s(?!player)(.+)/i;
-        const killedByPlayerTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\spos\=)(\<.+\>)(?:\)\skilled\sby\sPlayer\s")(.+)(?:".+\(.+pos=(<.+>)\)\s)(.+)/i;
-        const suicideTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s(?:"|'))(.+)(?:(?:"|')\s\(id=.+\)\scommitted\ssuicide)/i;
-        const bledOutTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\,.+\)\sbled\sout)/i;
-        const diedGenericTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\spos=\<.+\>\)\sdied\.\sStats>\sWater:\s)([0-9\.]+)(?:\sEnergy:\s)([0-9\.]+)(?:\sBleed(?:ing)?\ssources:\s)([0-9]+)/i;
-        const consciousnessTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\spos=)(\<.+\>)(?:\)\s)(is unconscious|regained consciousness)/i;
-        const fallDamageTest = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\)\[HP:\s(.+)\]\s)(.+)/i;
-
-        const wasConneted = string.match(connectTest);
-
-        if (wasConneted) {
-            this.addEvent({
-                category: 'connect',
-                timestamp: wasConneted[1],
-                player: wasConneted[2],
-                id: uuid,
-            });
-            return;
-        }
-
-        const wasDisconneted = string.match(disconnectTest);
-
-        if (wasDisconneted) {
-            this.addEvent({
-                category: 'disconnect',
-                timestamp: wasDisconneted[1],
-                player: wasDisconneted[2],
-            });
-            return;
-        }
-
-        const wasChatMessage = string.match(chatTest);
+        /*const wasChatMessage = string.match(TEST_CHAT);
 
         if (wasChatMessage) {
-            this.addEvent({
+            return {
                 category: 'chat',
                 timestamp: wasChatMessage[1],
                 datestamp: wasChatMessage[2],
                 player: wasChatMessage[3],
                 message: wasChatMessage[4],
-            });
-            return;
-        }
+            };
+        }*/
 
-        const wasDamagedByPlayer = string.match(damagePlayerTest);
-
-        if (wasDamagedByPlayer) {
-            this.addEvent({
-                category: 'damage',
-                type: 'pvp',
-                timestamp: wasDamagedByPlayer[1],
-                player: wasDamagedByPlayer[2],
-                playerPos: wasDamagedByPlayer[3],
-                hp: wasDamagedByPlayer[4],
-                attacker: wasDamagedByPlayer[5],
-                attackerPos: wasDamagedByPlayer[6],
-                damage: wasDamagedByPlayer[7],
-                weapon: wasDamagedByPlayer[8] || '',
-            });
-            return;
-        }
-
-        const wasDamagedByNPC = string.match(damageNPCTest);
+        const wasDamagedByNPC = string.match(TEST_DAMAGE_NPC);
 
         if (wasDamagedByNPC) {
-            this.addEvent({
-                category: 'damage',
-                type: 'pve',
-                timestamp: wasDamagedByNPC[1],
-                player: wasDamagedByNPC[2],
-                hp: wasDamagedByNPC[3],
-                attacker: wasDamagedByNPC[4],
-                damage: wasDamagedByNPC[5],
-                weapon: wasDamagedByNPC[6],
-            });
-            return;
+            return {
+                table: 'damage',
+                data: {
+                    timestamp: wasDamagedByNPC[1],
+                    player_bisid: wasDamagedByNPC[2],
+                    player_pos: wasDamagedByNPC[3],
+                    player_hp: wasDamagedByNPC[4],
+                    attacker_npc: wasDamagedByNPC[5],
+                    body_part: wasDamagedByNPC[6],
+                    damage: wasDamagedByNPC[7],
+                    weapon: wasDamagedByNPC[8],
+                },
+            };
         }
 
-        const wasDamagedByEnvironment = string.match(fallDamageTest);
+        const wasDamagedByPlayer = string.match(TEST_DAMAGE_PLAYER);
 
-        if (wasDamagedByEnvironment) {
-            this.addEvent({
-                category: 'damage',
-                type: 'environment',
-                timestamp: wasDamagedByEnvironment[1],
-                player: wasDamagedByEnvironment[2],
-                hp: wasDamagedByEnvironment[3],
-                damage: wasDamagedByEnvironment[4],
-            });
-            return;
+        if (wasDamagedByPlayer) {
+            return {
+                table: 'damage',
+                data: {
+                    timestamp: wasDamagedByNPC[1],
+                    player_bisid: wasDamagedByNPC[2],
+                    player_pos: wasDamagedByNPC[3],
+                    player_hp: wasDamagedByNPC[4],
+                    attacker_bisid: wasDamagedByNPC[5],
+                    attacker_pos: wasDamagedByNPC[5],
+                    body_part: wasDamagedByNPC[6],
+                    damage: wasDamagedByNPC[7],
+                    weapon: wasDamagedByNPC[8],
+                    distance: wasDamagedByNPC[8] || 0,
+                },
+            };
         }
 
-        const waskilledByInfected = string.match(killedByInfectedTest);
+        const waskilledByInfected = string.match(TEST_KILLED_BY_NPC);
 
         if (waskilledByInfected) {
-            this.addEvent({
+            return {
                 category: 'killed',
                 type: 'pve',
                 timestamp: waskilledByInfected[1],
                 player: waskilledByInfected[2],
                 killer: waskilledByInfected[3],
-            });
-            return;
+            };
         }
 
-        const waskilledByPlayer = string.match(killedByPlayerTest);
+        const waskilledByPlayer = string.match(TEST_KILLED_BY_PLAYER);
 
         if (waskilledByPlayer) {
-            this.addEvent({
+            return {
                 category: 'killed',
                 type: 'pvp',
                 timestamp: waskilledByPlayer[1],
@@ -271,39 +260,13 @@ class DayZParser {
                 killer: waskilledByPlayer[4],
                 killerPos: waskilledByPlayer[5],
                 weapon: waskilledByPlayer[6],
-            });
-            return;
+            };
         }
 
-        const wasSuicide = string.match(suicideTest);
-
-        if (wasSuicide) {
-            this.addEvent({
-                category: 'killed',
-                type: 'suicide',
-                timestamp: wasSuicide[1],
-                player: wasSuicide[2],
-            });
-            return;
-        }
-
-        const wasBledOut = string.match(bledOutTest);
-
-        if (wasBledOut) {
-            this.addEvent({
-                category: 'killed',
-                type: 'bleedout',
-                timestamp: wasBledOut[1],
-                player: wasBledOut[2],
-                killer: 'Unknown',
-            });
-            return;
-        }
-
-        const wasKilledGeneric = string.match(diedGenericTest);
+        const wasKilledGeneric = string.match(TEST_DIED_GENERIC);
 
         if (wasKilledGeneric) {
-            this.addEvent({
+            return {
                 category: 'killed',
                 type: 'unknown',
                 timestamp: wasKilledGeneric[1],
@@ -312,128 +275,80 @@ class DayZParser {
                 water: wasKilledGeneric[3],
                 energy: wasKilledGeneric[4],
                 bleeds: wasKilledGeneric[5],
-            });
-            return;
+            };
         }
 
-        const consciousnessChanged = string.match(consciousnessTest);
+        /*const consciousnessChanged = string.match(TEST_CONSCIOUSNESS);
 
         if (consciousnessChanged) {
-            this.addEvent({
+            return {
                 category: 'status',
                 type: 'consciousness',
                 timestamp: consciousnessChanged[1],
                 player: consciousnessChanged[2],
                 playerPos: consciousnessChanged[3],
                 status: consciousnessChanged[4],
-            });
-            return;
-        }
-    }
+            };
+        }*/
 
-    /**
-     * Prepends an event to the events list
-     * @param {Object} event The event to prepend
-     */
-    addEvent(event) {
-        const categoriesToLog = this.server.config.logEventsCategories;
-        const typesToLog = this.server.config.logEventsTypes;
+        const wasSuicide = string.match(TEST_SUICIDE);
 
-        // if specific event categories are specified
-        // we only want to log events matching them.
-        if (categoriesToLog.length) {
-            if (!categoriesToLog.includes(event.category)) {
-                return;
-            }
+        if (wasSuicide) {
+            return {
+                category: 'killed',
+                type: 'suicide',
+                timestamp: wasSuicide[1],
+                player: wasSuicide[2],
+            };
         }
 
-        // if specific event types are specified
-        // we only want to log events matching them.
-        if (typesToLog.length) {
-            if (!event.type || !typesToLog.includes(event.type)) {
-                return;
-            }
+        const wasBledOut = string.match(TEST_BLED_OUT);
+
+        if (wasBledOut) {
+            return {
+                category: 'killed',
+                type: 'bleedout',
+                timestamp: wasBledOut[1],
+                player: wasBledOut[2],
+                killer: 'Unknown',
+            };
         }
 
-        // send message to discord
-        const message = this.translateEvent(event);
+        /*const wasConneted = string.match(TEST_CONNECTED);
 
-        if (!message) {
-            return;
+        if (wasConneted) {
+            return {
+                category: 'connect',
+                timestamp: wasConneted[1],
+                player: wasConneted[2],
+                id: uuid,
+            };
         }
 
-        this.server.discord.sendMessage(message);
-    }
+        const wasDisconneted = string.match(TEST_DISCONNECTED);
 
-    /**
-     * Translates an event object to a readable string
-     * @param  {Object} event The event object
-     * @return {String}
-     */
-    translateEvent(event) {
-        let message;
+        if (wasDisconneted) {
+            return {
+                category: 'disconnect',
+                timestamp: wasDisconneted[1],
+                player: wasDisconneted[2],
+            };
+        }*/
 
-        switch (event.category) {
-            case 'connect':
-                message = `"${event.player}" Connected`;
-                break;
+        const wasDamagedByEnvironment = string.match(TEST_FALL_DAMAGE);
 
-            case 'disconnect':
-                message = `"${event.player}" Disconnected`;
-                break;
-
-            case 'damage':
-                switch (event.type) {
-                    case 'pve':
-                        message = `"${event.player}" (HP: ${event.hp}) was damaged ${event.damage} by NPC "${event.attacker}" with ${event.weapon}.`;
-                        break;
-                    case 'pvp':
-                        message = `"${event.player}" (Pos: ${event.playerPos}, HP: ${event.hp}) was damaged ${event.damage} by Player "${event.attacker}" (Pos: ${event.attackerPos}) ${event.weapon}.`;
-                        break;
-                    case 'environment':
-                        message = `"${event.player}" (HP: ${event.hp}) ${event.damage}.`;
-                        break;
-                }
-                break;
-
-            case 'status':
-                switch (event.type) {
-                    case 'consciousness':
-                        message = `"${event.player}" (Pos: ${event.playerPos}) ${event.status}.`;
-                        break;
-                }
-                break;
-
-            case 'killed':
-                switch (event.type) {
-                    case 'pve':
-                        message = `"${event.player}" was killed by NPC "${event.killer}".`;
-                        break;
-                    case 'pvp':
-                        message = `"${event.player}" (Pos: ${event.playerPos}) was killed by Player "${event.killer}" (Pos: ${event.killerPos}) ${event.weapon}.`;
-                        break;
-                    case 'suicide':
-                        message = `"${event.player}" committed suicide.`;
-                        break;
-                    case 'bleedout':
-                        message = `"${event.player}" bled out.`;
-                        break;
-                    case 'unknown':
-                        message = `"${event.player}" died from unknown causes. Character stats time of death - Water: ${event.water}, Energy: ${event.energy} & Bleed Sources: ${event.bleeds}, `;
-                        break;
-                }
-                break;
-
-            case 'chat':
-                message = `"${event.player}" said: ${DOMPurify.sanitize(event.message)}`;
-                break;
+        if (wasDamagedByEnvironment) {
+            return {
+                category: 'damage',
+                type: 'environment',
+                timestamp: wasDamagedByEnvironment[1],
+                player: wasDamagedByEnvironment[2],
+                hp: wasDamagedByEnvironment[3],
+                damage: wasDamagedByEnvironment[4],
+            };
         }
 
-        if (!message) {
-            return null;
-        }
-
-        return `[${event.timestamp}] ${message}`;
+        return null;
     }
 }
 
