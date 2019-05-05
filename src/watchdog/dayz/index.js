@@ -11,6 +11,7 @@ const window = (new JSDOM('')).window;
 const DOMPurify = createDOMPurify(window);
 
 // event parser tests
+const TEST_LINK_TOKEN = /^link ([a-z0-9]+)$/i;
 const TEST_CONNECTED = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" is connected \(id=(.+)\)/i;
 const TEST_DISCONNECTED = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+"\(id=(.+)\) has been disconnected/i;
 const TEST_CHAT = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| \[.+\] \[Chat\] (.+)\(steamid=(.+), bisid=(.+)\) (.+)/i;
@@ -111,7 +112,7 @@ class DayZParser {
             const lines = data.toString().split('\n');
 
             this.server.logger(this.name, `Importing ${lines.length} lines from "${filename}"..`);
-            if (lines.length <= 1) {
+            if (lines.length <= 0) {
                 return;
             }
 
@@ -131,15 +132,29 @@ class DayZParser {
                             const entries = parsedLines.filter((line) => line);
 
                             return Promise.all(entries.map((entry) => {
-                                const params = entry.table === 'players' ? null : {'logfile_id': model.id};
+                                let params = {'logfile_id': model.id};
+
+                                if (entry.table === 'players') {
+                                    params = null;
+                                    entry.isLinkToken = entry.message.match(TEST_LINK_TOKEN);
+                                }
 
                                 return models[entry.table]
                                     .forge(entry.data)
                                     .save(params, {transacting: t, method: 'insert'})
+                                    .then((model) => {
+                                        if (entry.isLinkToken) {
+                                            this.linkAccounts(entry, entry.isLinkToken[1]);
+                                        }
+
+                                        return model;
+                                    })
                                     .catch((err) => {
                                         // "there i fixed it" - ignore duplicate keys for players
                                         if (entry.table === 'players') {
-                                            return;
+                                            if (entry.isLinkToken) {
+                                                return this.linkAccounts(entry, entry.isLinkToken[1]);
+                                            }
                                         }
 
                                         throw err;
@@ -157,12 +172,52 @@ class DayZParser {
         });
     }
 
+    async linkAccounts(player, token) {
+        return this.server.database.models.linkTokens
+            .where('token', token)
+            .fetch()
+            .then((tokenModel) => {
+                if (!tokenModel) {
+                    return;
+                }
+
+                return this.server.database.models.players
+                    .where('player_bisid', player.data.player_bisid)
+                    .fetch()
+                    .then((playerModel) => {
+                        if (!playerModel) {
+                            return;
+                        }
+
+                        return playerModel
+                            .set('discord_id', tokenModel.discord_id)
+                            .save()
+                            .then(() => {
+                                /*return this.server.database.models.linkTokens
+                                    .where('token', token)
+                                    .destroy()
+                                    .catch((err) => {
+                                        console.error(err);
+                                    });*/
+                            })
+                            .catch((err) => {
+                                console.error(err);
+                            });
+                    }).catch((err) => {
+                        console.error(err);
+                    });
+            }).catch((err) => {
+                console.error(err);
+            });
+    }
+
     /**
      * Parses a log line entry
      * @param  {String} string A line in the log file
      * @return {Promise}       resolves to an object
      */
     parseLine(string) {
+        console.log(string);
         try {
             const wasDamagedByPlayer = string.match(TEST_DAMAGE_PLAYER);
 
@@ -298,6 +353,7 @@ class DayZParser {
                         player_steamid: wasChatMessage[3],
                         player_bisid: wasChatMessage[4],
                     },
+                    message: wasChatMessage[5],
                 };
             }
 

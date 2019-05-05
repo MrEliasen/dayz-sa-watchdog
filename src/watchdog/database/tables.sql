@@ -1,3 +1,4 @@
+
 CREATE TABLE IF NOT EXISTS `damage` (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `timestamp` varchar(19) NOT NULL,
@@ -52,6 +53,7 @@ CREATE TABLE IF NOT EXISTS `players` (
   `player_steamid` varchar(17) NOT NULL,
   `player_name` varchar(32) NOT NULL,
   PRIMARY KEY (`player_bisid`),
+  UNIQUE KEY `player_bisid` (`player_bisid`),
   KEY `player_steamid` (`player_steamid`),
   KEY `discord_id` (`discord_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
