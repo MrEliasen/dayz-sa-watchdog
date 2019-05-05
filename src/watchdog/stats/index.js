@@ -3,10 +3,24 @@ import {round2Decimal} from '../../helper';
 const templateTopList = (title, listArray) => `
 \`\`\`css
 ${title}
------------------------
+
+---------- [TOP 10] ----------
 ${listArray.join("\n")}
------------------------
+------------------------------
 "-" = Player name not confirmed.
+\`\`\`
+`;
+
+const templateCommandList = (generalArray, whisperArray) => `
+\`\`\`css
+DayZ SA Watchdog - Commands
+
+----- [Public Commands] -----
+${generalArray.join("\n")}
+
+------- [DM Commands] -------
+${whisperArray.join("\n")}
+-----------------------------
 \`\`\`
 `;
 
@@ -24,8 +38,51 @@ class Stats {
         this.server.logger(this.name, 'Component instantiated');
     }
 
+    commandList(message) {
+        const whisperCommands = [
+            {
+                cmd: '!link',
+                desc: 'Begin the process of linking your DayZ SA and Discord account.',
+            },
+            {
+                cmd: '!unlink',
+                desc: 'Immediately removes the account link.',
+            },
+            {
+                cmd: '!status',
+                desc: 'See the linking status of your account. Whether enabled or not.',
+            },
+        ];
+
+        const generalCommands = [
+            {
+                cmd: '!top kills',
+                desc: 'Show the top 10 list of most player kills.',
+            },
+            {
+                cmd: '!top damage',
+                desc: 'Show the top 10 list of most player damage done.',
+            },
+            {
+                cmd: '!top kill distance',
+                desc: 'Show the top 10 list of longest player kill-shot.',
+            },
+            {
+                cmd: '!top damage distance',
+                desc: 'Show the top 10 list of longest player damage-shot.',
+            },
+        ];
+        message.channel.send(templateCommandList(
+            generalCommands.map((cmd) => `${cmd.cmd.padEnd(20, ' ')} | ${cmd.desc}`),
+            whisperCommands.map((cmd) => `${cmd.cmd.padEnd(20, ' ')} | ${cmd.desc}`)
+        ));
+    }
+
     handleMessages(message) {
         switch (message.content.toLowerCase()) {
+            case '!commands':
+                return this.commandList(message);
+
             //PvP
             case '!top kills':
                 return this.top10KillsPvP(message);
@@ -59,7 +116,7 @@ class Stats {
                 let maxKills;
 
                 message.channel.send(templateTopList(
-                    'Most Kills (PvP) (Top 10)',
+                    'Most Kills (PvP)',
                     models.map((p, index) => {
                         if (index === 0) {
                             maxKills = p.kills.toString().length;
@@ -95,7 +152,7 @@ class Stats {
                 let maxDamage;
 
                 message.channel.send(templateTopList(
-                    'Most Damage Dealt (PvP) (Top 10)',
+                    'Most Damage Dealt (PvP)',
                     models.map((p, index) => {
                         if (index === 0) {
                             maxDamage = p.totalDamage.toString().length;
@@ -131,7 +188,7 @@ class Stats {
                 let maxDistance;
 
                 message.channel.send(templateTopList(
-                    'Longest Kill Shot (PvP) (Top 10)',
+                    'Longest Kill Shot (PvP)',
                     models.map((p, index) => {
                         const roundedDistance = round2Decimal(parseInt(p.distance, 10)).toString();
 
@@ -169,7 +226,7 @@ class Stats {
                 let maxDistance;
 
                 message.channel.send(templateTopList(
-                    'Longest Damage Shot (PvP) (Top 10)',
+                    'Longest Damage Shot (PvP)',
                     models.map((p, index) => {
                         const roundedDistance = round2Decimal(parseInt(p.distance, 10)).toString();
 
