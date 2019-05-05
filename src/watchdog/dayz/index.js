@@ -15,7 +15,7 @@ const TEST_CONNECTED = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" is connected
 const TEST_DISCONNECTED = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+"\(id=(.+)\) has been disconnected/i;
 const TEST_CHAT = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| \[.+\] \[Chat\] (.+)\(steamid=(.+), bisid=(.+)\) (.+)/i;
 const TEST_DAMAGE_NPC = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" \(id=(.+) pos\=\<(.+)\>\)\[HP: ([0-9\.]+)\] hit by ((?!player).+) (into.+) for ([0-9.]+) damage \((.+)\)/i;
-const TEST_DAMAGE_PLAYER = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+"(?: \(dead\))? \(id=(.+) pos\=\<(.+)\>\)\[HP: ([0-9\.]+)\] hit by Player ".+" \(id=(.+) pos\=\<(.+)\>\) (.+) for (.+) damage with (.+ [\w\s]+(?=from (.+) meters)|.+)/i;
+const TEST_DAMAGE_PLAYER = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+"(?: \(dead\))? \(id=(.+) pos=\<(.+)\>\)\[HP: (.+)\] hit by Player ".+" \(id=(.+) pos=\<(.+)\>\) (.+) for (.+) damage(?: \((MeleeFist)\)|(?: \(.+\))? with (.+(?=from (.+) meters)|.+))/i;
 const TEST_KILLED_BY_NPC = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" \(DEAD\) \(id=(.+) pos=\<(.+)\>\) killed by (?!player)(.+)/i;
 const TEST_KILLED_BY_PLAYER = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" \(DEAD\) \(id=(.+) pos\=\<(.+)\>\) killed by Player ".+" \(id=(.+) pos=\<(.+)\>\) with (.+) from (.+) meters/i;
 const TEST_SUICIDE = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player (?:"|').+(?:"|') \(id=(.+)\) committed suicide\./i;
@@ -175,11 +175,11 @@ class DayZParser {
                         player_pos: wasDamagedByPlayer[3],
                         player_hp: wasDamagedByPlayer[4],
                         attacker_bisid: wasDamagedByPlayer[5],
-                        attacker_pos: wasDamagedByPlayer[5],
-                        body_part: wasDamagedByPlayer[6],
-                        damage: wasDamagedByPlayer[7],
-                        weapon: wasDamagedByPlayer[8],
-                        distance: wasDamagedByPlayer[8] || 0,
+                        attacker_pos: wasDamagedByPlayer[6],
+                        body_part: wasDamagedByPlayer[7],
+                        damage: wasDamagedByPlayer[8],
+                        weapon: wasDamagedByPlayer[9] || wasDamagedByPlayer[10],
+                        distance: wasDamagedByPlayer[9] ? wasDamagedByPlayer[10] : wasDamagedByPlayer[11] || 0,
                     },
                 };
             }
