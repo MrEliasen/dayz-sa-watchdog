@@ -4,21 +4,15 @@
 
 html,
 body {
-    width: 100%;
-    height: 100%;
+    background: #F7F7F7 !important;
 }
 
-#app,
-#app > .transition-group,
-section.fix-container {
-    width: 100%;
-    height: 100%;
+body {
+    overflow-y: scroll !important;
 }
 
-section.fix-container > div {
-    height: 100%;
-    width: 100%;
-    display: inline-block;
+.c-configure {
+    margin: 20px 10px !important;
 }
 
 .c-main {
@@ -42,7 +36,15 @@ section.fix-container > div {
     color: #3531ff;
 }
 
-.c-configure {
-    margin: 20px 10px !important;
-    height: calc(100vh - 40px) !important;
+.ui.selection.dropdown {
+    min-height: 28px;
+    padding: .22619048em 2.1em .22619048em .35714286em;
+    line-height: 28px;
+    max-width: 93%;
+}
+
+.app-link {
+    text-decoration: underline;
+    cursor: pointer;
+    color: #1f80ea;
 }
