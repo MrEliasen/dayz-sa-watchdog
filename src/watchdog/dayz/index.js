@@ -135,7 +135,7 @@ class DayZParser {
 
                                 return models[entry.table]
                                     .forge(entry.data)
-                                    .save(params, {transacting: t})
+                                    .save(params, {transacting: t, method: 'insert'})
                                     .catch((err) => {
                                         // "there i fixed it" - ignore duplicate keys for players
                                         if (entry.table === 'players') {
