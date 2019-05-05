@@ -191,13 +191,13 @@ class DiscordBot {
     }
 
     sendSystemMessage(message) {
-        if (!this.server.config.postSystenEvents) {
+        /*if (!this.server.config.postSystenEvents) {
             return;
         }
 
         this.channel
             .send(message, {code: true})
-            .catch(console.error);
+            .catch(console.error);*/
     }
 }
 

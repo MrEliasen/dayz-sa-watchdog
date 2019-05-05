@@ -66,7 +66,7 @@ const typeOptions = [
 ];
 
 const databaseOptions = [
-    {
+    /*{
         text: '',
         value: '',
     },
@@ -77,7 +77,7 @@ const databaseOptions = [
     {
         text: 'PostgreSQL',
         value: 'pg ',
-    },
+    },*/
     {
         text: 'SQLite3',
         value: 'sqlite3',
@@ -240,7 +240,7 @@ class Configure extends React.Component {
                     <Divider horizontal>Player/Server Stats</Divider>
 
                     <Segment>
-                        <Form.Group widths='equal'>
+                        {/*<Form.Group widths='equal'>
                             <Form.Field>
                                 <Checkbox
                                     label="Collect Stats"
@@ -259,15 +259,23 @@ class Configure extends React.Component {
                                 />
                                 <p><small>Please choose the type of database to store the log file stats in.</small></p>
                             </Form.Field>
+                        </Form.Group>*/}
+                        <Form.Group widths='equal'>
+                            <Form.Field>
+                                <label>Database Type</label>
+                                <Select
+                                    options={databaseOptions}
+                                    value={databaseType}
+                                    onChange={(e, {value}) => this.setState({databaseType: value})}
+                                />
+                                <p><small>Please choose the type of database to store the log file stats in.</small></p>
+                            </Form.Field>
+                            <Form.Field>
+                                <p>SQLite3 comes bundled with this app and will not require any additional details. Just remember to backup the database file, found in the <span className="app-link" onClick={() => shell.openItem(remote.app.getPath('userData'))}>app-data directory</span>. You can also delete the database file and restart the watchdog to re-import all data. Players will need to relink their accounts if you delete the database.</p>
+                            </Form.Field>
                         </Form.Group>
-                        {
-                            collectStats &&
-                            databaseType !== '' &&
-                            !requireDBDetails &&
-                            <p style={{textAlign: 'center'}}>SQLite3 comes bundled with this app and will not require any additional details. Remember to backup the database file, found in the <span className="app-link" onClick={() => shell.openItem(remote.app.getPath('userData'))}>app-data directory</span></p>
-                        }
-                        {
-                            collectStats &&
+                        {/*
+                            //collectStats &&
                             requireDBDetails &&
                             <React.Fragment>
                                 <Divider />
@@ -303,7 +311,7 @@ class Configure extends React.Component {
                                     </Form.Field>
                                 </Form.Group>
                             </React.Fragment>
-                        }
+                        */}
                     </Segment>
                     
                     <Divider horizontal>Discord Settings</Divider>
@@ -332,7 +340,7 @@ class Configure extends React.Component {
                                 <p><small>ID of the channel to listen for commands in. If empty, only DMs are used. Right-click a channel in a Discord server and "Copy ID".</small></p>
                             </Form.Field>
                         </Form.Group>
-                        <Form.Group widths='equal'>
+                        {/*<Form.Group widths='equal'>
                             <Form.Field>
                                 <Checkbox
                                     label="Post DayZ Watchdog Events"
@@ -344,7 +352,7 @@ class Configure extends React.Component {
                             </Form.Field>
                             <Form.Field>
                             </Form.Field>
-                        </Form.Group>
+                        </Form.Group>*/}
                     </Segment>
 
                     <div style={{textAlign: 'right'}}>
