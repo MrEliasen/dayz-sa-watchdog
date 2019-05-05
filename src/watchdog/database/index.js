@@ -55,7 +55,6 @@ class Database {
 
             this.server.logger(this.name, 'Connecting to database..');
             await this.connect();
-            this.server.logger(this.name, 'Importing tables (if required)..');
             await this.import();
             this.createModels();
         } catch (err) {
@@ -117,6 +116,7 @@ class Database {
         }
 
         try {
+            this.server.logger(this.name, 'Importing tables (if required)..');
             const sql = fs.readFileSync(__dirname + '/tables.sql').toString();
             //await this.connection.raw(sql.toString());
         } catch (err) {
