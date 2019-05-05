@@ -271,7 +271,7 @@ class Configure extends React.Component {
                                 <p><small>Please choose the type of database to store the log file stats in.</small></p>
                             </Form.Field>
                             <Form.Field>
-                                <p>SQLite3 comes bundled with this app and will not require any additional details. Just remember to backup the database file, found in the <span className="app-link" onClick={() => shell.openItem(remote.app.getPath('userData'))}>app-data directory</span>. You can also delete the database file and restart the watchdog to re-import all data. Players will need to relink their accounts if you delete the database.</p>
+                                <p>SQLite3 comes bundled with this app and will not require any additional details. Just remember to backup the database file, found in the <span className="app-link" onClick={() => shell.openItem(remote.app.getPath('userData'))}>app-data directory</span>. You can also delete the database file and restart the watchdog to re-import all data.</p>
                             </Form.Field>
                         </Form.Group>
                         {/*

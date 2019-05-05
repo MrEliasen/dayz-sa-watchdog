@@ -57,12 +57,22 @@ class DiscordBot {
             });
 
             this.client.on('message', (message) => {
+                const channelId = this.server.config.discordChannelID;
+
                 if (message.channel.type === 'dm') {
                     this.handleDMs(message);
                     return;
                 }
 
-                this.handleMessage(message);
+                if (!channelId || channelId === '') {
+                    return;
+                }
+
+                if (message.channel.id !== channelId) {
+                    return;
+                }
+
+                this.server.stats.handleMessages(message);
             });
 
             this.server.logger(this.name, 'Connecting..');
@@ -83,6 +93,9 @@ class DiscordBot {
                     return;
                 case '!unlink':
                     this.removeLink(message);
+                    return;
+                default:
+                    this.server.stats.handleMessages(message);
                     return;
             }
         } catch (err) {
