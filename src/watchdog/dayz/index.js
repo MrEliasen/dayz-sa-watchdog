@@ -64,11 +64,17 @@ class DayZParser {
             return;
         }
 
-        this.watcher = chokidar.watch(this.server.config.logFileDirectory + '/*.ADM');
+        this.watcher = chokidar.watch(this.server.config.logFileDirectory);
         this.watcher
             .on('add', (filePath, stats) => {
                 const filePieces = filePath.split(path.sep);
                 const file = filePieces[filePieces.length - 1];
+                const ext = path.extname(file);
+
+                if (ext !== '.ADM') {
+                    this.watcher.unwatch(filePath);
+                    return;
+                }
 
                 if (file === 'DayZServer_x64.ADM') {
                     if (this.loaded) {
