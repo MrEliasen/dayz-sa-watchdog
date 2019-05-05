@@ -33,7 +33,7 @@ class Database {
                 databaseHost,
                 databaseName,
                 databaseUser,
-                databasePassword
+                databasePassword,
             } = this.server.config;
 
             if (!collectStats) {
@@ -72,21 +72,28 @@ class Database {
             databasePassword,
             databasePort,
         } = this.server.config;
+
         const options = {
+            debug: true,
             client: databaseType,
+            acquireConnectionTimeout: 5000,
         };
 
         if (databaseType !== 'sqlite3') {
             options.connection = {
-                host : databaseHost,
-                user : databaseUser,
-                password : databasePassword,
-                database : databaseName,
+                host: databaseHost,
+                user: databaseUser,
+                password: databasePassword,
+                database: databaseName,
                 multipleStatements: true,
             };
+            options.pool = {
+                min: 0,
+                max: 7,
+            };
 
-            if (databasePort !== '') {
-                options.connection.port = databasePort
+            if (databasePort && databasePort !== '') {
+                options.connection.port = databasePort;
             }
         } else {
             const sqliteDbDist = remote.app.getPath('userData') + '/database.sqlite';
@@ -94,7 +101,7 @@ class Database {
 
             if (!exits) {
                 // make sure the database file exists, otherwise, create it
-                fs.copyFileSync(__dirname + './database.sqlite', sqliteDbDist);
+                fs.copyFileSync(__dirname + '/database.sqlite', sqliteDbDist);
             }
 
             options.connection = {
@@ -105,6 +112,7 @@ class Database {
 
         this.connection = knex(options);
         this.db = bookshelf(this.connection);
+        return this.connection;
     }
 
     async import() {
@@ -112,26 +120,53 @@ class Database {
             return;
         }
 
-        const sql = fs.readFileSync(__dirname + '/tables.sql').toString();
-        await this.connection.raw(sql.toString());
-        return;
+        try {
+            const sql = fs.readFileSync(__dirname + '/tables.sql').toString();
+            //await this.connection.raw(sql.toString());
+        } catch (err) {
+            console.log(err);
+        }
     }
 
     createModels() {
-        this.models.players = this.db.Model.extend({
-            tableName: 'players',
-        });
-
         this.models.damage = this.db.Model.extend({
             tableName: 'damage',
+            defaults: {
+                player_hp: '',
+                attacker_bisid: '',
+                attacker_pos: '',
+                attacker_npc: '',
+                body_part: '',
+                damage: 0.0,
+                weapon: '',
+                distance: 0,
+            },
+        });
+
+        this.models.logs = this.db.Model.extend({
+            tableName: 'logs',
         });
 
         this.models.killed = this.db.Model.extend({
             tableName: 'killed',
+            defaults: {
+                player_pos: '',
+                attacker_bisid: '',
+                attacker_pos: '',
+                attacker_npc: '',
+                weapon: '',
+                distance: 0,
+            },
         });
 
-        this.models.logs = this.db.Model.extend({
-            tableName: 'imported_logs',
+        this.models.players = this.db.Model.extend({
+            tableName: 'players',
+            idAttribute: 'player_bisid',
+        });
+
+        this.models.linkTokens = this.db.Model.extend({
+            tableName: 'link_tokens',
+            idAttribute: 'discord_id',
         });
     }
 }

@@ -1,28 +1,28 @@
 import fs from 'fs';
 import path from 'path';
 import chokidar from 'chokidar';
-import Bookshelf from 'bookshelf';
 import uuid from 'uuid/v4';
 import readLastLines from 'read-last-lines';
 import createDOMPurify from 'dompurify';
 import {JSDOM} from 'jsdom';
+import {round2Decimal} from '../../helper';
 
 const window = (new JSDOM('')).window;
 const DOMPurify = createDOMPurify(window);
 
 // event parser tests
-const TEST_CONNECTED = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\sis connected\s\(id=.+\))/i;
-const TEST_DISCONNECTED = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\(id=.+\)\shas\sbeen\sdisconnected)/i;
-const TEST_CHAT = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s\[)([0-9\.\s]+)(?:\]\s\[Chat\]\s)(.+)(?:\(.+\)\s)(.+)/i;
-const TEST_DAMAGE_NPC = /(?:([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" \(id=(.+) pos\=\<(.+)\>\)\[HP: ([0-9\.]+)\] hit by (?!player)(.+) (into.+) for ([0-9.]+) damage \((.+)\))/i;
-const TEST_DAMAGE_PLAYER = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+"(?: \(dead\))? \(id=(.+) pos\=\<(.+)\>\)\[HP: ([0-9\.]+)\] hit by Player ".+" \(id=(.+) pos\=\<(.+)\>\) (.+) for (.+) damage (.+ with [\w\s]+(?=from (.+) meters)|.+)/i;
-const TEST_KILLED_BY_NPC = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\,.+\))\skilled\sby\s(?!player)(.+)/i;
-const TEST_KILLED_BY_PLAYER = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\spos\=)(\<.+\>)(?:\)\skilled\sby\sPlayer\s")(.+)(?:".+\(.+pos=(<.+>)\)\s)(.+)/i;
-const TEST_SUICIDE = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s(?:"|'))(.+)(?:(?:"|')\s\(id=.+\)\scommitted\ssuicide)/i;
-const TEST_BLED_OUT = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\,.+\)\sbled\sout)/i;
-const TEST_DIED_GENERIC = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(DEAD\)\s\(id=.+\spos=\<.+\>\)\sdied\.\sStats>\sWater:\s)([0-9\.]+)(?:\sEnergy:\s)([0-9\.]+)(?:\sBleed(?:ing)?\ssources:\s)([0-9]+)/i;
-const TEST_CONSCIOUSNESS = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\spos=)(\<.+\>)(?:\)\s)(is unconscious|regained consciousness)/i;
-const TEST_FALL_DAMAGE = /([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\s\|\s)(?:Player\s")(.+)(?:"\s\(id=.+\)\[HP:\s(.+)\]\s)(.+)/i;
+const TEST_CONNECTED = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" is connected \(id=(.+)\)/i;
+const TEST_DISCONNECTED = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+"\(id=(.+)\) has been disconnected/i;
+const TEST_CHAT = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| \[.+\] \[Chat\] (.+)\(steamid=(.+), bisid=(.+)\) (.+)/i;
+const TEST_DAMAGE_NPC = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" \(id=(.+) pos\=\<(.+)\>\)\[HP: ([0-9\.]+)\] hit by ((?!player).+) (into.+) for ([0-9.]+) damage \((.+)\)/i;
+const TEST_DAMAGE_PLAYER = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+"(?: \(dead\))? \(id=(.+) pos\=\<(.+)\>\)\[HP: ([0-9\.]+)\] hit by Player ".+" \(id=(.+) pos\=\<(.+)\>\) (.+) for (.+) damage with (.+ [\w\s]+(?=from (.+) meters)|.+)/i;
+const TEST_KILLED_BY_NPC = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" \(DEAD\) \(id=(.+) pos=\<(.+)\>\) killed by (?!player)(.+)/i;
+const TEST_KILLED_BY_PLAYER = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" \(DEAD\) \(id=(.+) pos\=\<(.+)\>\) killed by Player ".+" \(id=(.+) pos=\<(.+)\>\) with (.+) from (.+) meters/i;
+const TEST_SUICIDE = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player (?:"|').+(?:"|') \(id=(.+)\) committed suicide\./i;
+const TEST_BLED_OUT = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" (?:\(DEAD\) )?\(id=(.+)\) bled out/i;
+const TEST_DIED_GENERIC = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" \(DEAD\) \(id=(.+) pos=\<(.+)\>\) died\. Stats> Water: (.+) Energy: (.+) Bleed sources: (.+)/i;
+const TEST_CONSCIOUSNESS = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" \(id=(.+) pos=\<(.+)\>\) (is unconscious|regained consciousness)/i;
+const TEST_FALL_DAMAGE = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" \(id=(.+) pos=<(.+)>\)\[HP: (.+)\] hit by FallDamage/i;
 
 /**
  * DayZ manager
@@ -79,14 +79,6 @@ class DayZParser {
 
                 this.import(file);
             });
-            /*.on('change', (event, filePath) => {
-                const filePath = filePath.split(filePath.sep);
-                const file = filePath[filePath.length - 1];
-
-                if (file !== 'DayZServer_x64.ADM') {
-                    return;
-                }
-            });*/
 
         this.server.logger(this.name, `Watching .ADM files in the "${this.server.config.logFileDirectory}" directory for changes.`);
         setTimeout(() => this.loaded = true, 2000);
@@ -96,88 +88,73 @@ class DayZParser {
         this.server.database.models.logs
             .where('file_name', filename)
             .fetch()
-            .then(function(model) {
+            .then((model) => {
                 if (model) {
                     return;
                 }
 
-                this.importLogFile()
-            }).catch(function(err) {
+                this.importLogFile(filename);
+            }).catch((err) => {
                 console.error(err);
             });
     }
 
     importLogFile(filename) {
-        fs.readFile(`${this.server.config.logFileDirectory}/${filename}`, (err, data) => {
+        const fullFilePath = `${this.server.config.logFileDirectory}/${filename}`;
+
+        fs.readFile(fullFilePath, (err, data) => {
             if (err) {
-                this.server.logger(this.name, `Unable to read file "${this.server.config.logFileDirectory}".`);
+                this.server.logger(this.name, `Unable to read file "${fullFilePath}".`);
                 return;
             }
 
             const lines = data.toString().split('\n');
 
-            if (!lines.length <= 0) {
+            this.server.logger(this.name, `Importing ${lines.length} lines from "${filename}"..`);
+            if (lines.length <= 1) {
                 return;
             }
 
             const t0 = performance.now();
-            this.server.logger(this.name, `Importing "${filename}"..`);
 
-            Bookshelf.transaction(function(t) {
-                return this.server.database.models.logs
-                    .create({
+            this.server.database.db
+                .transaction((t) => {
+                    const models = this.server.database.models;
+                    const modelLogFile = models.logs.forge({
                         file_name: filename,
-                    })
-                    .save(null, {transacting: t})
-                    .tap((model) => {
-                        const parsedLines = lines.map(() => this.getLineEvent(line));
-                        const linesToImport = parsedLines.filter((line) => line);
-
-                        return Promise.map([
-                                {title: 'Canterbury Tales'},
-                                {title: 'Moby Dick'},
-                                {title: 'Hamlet'}
-                          ], function(info) {
-                                // Some validation could take place here.
-                                return new Book(info).save({'shelf_id': model.id}, {transacting: t});
-                          });
-
-                        const lineImports = lines.map(() => this.parseLine(line));
-                        await Promise.all(lineImports);
                     });
-            });
 
-            const t1 = performance.now();
+                    return modelLogFile
+                        .save(null, {transacting: t})
+                        .tap((model) => {
+                            const parsedLines = lines.map((line) => this.parseLine(line));
+                            const entries = parsedLines.filter((line) => line);
 
-            this.server.logger(this.name, `Import of "${filename}" complete! Took ${(t1 - t0)/1000} seconds.`);
-            (t1 - t0)
+                            return Promise.all(entries.map((entry) => {
+                                const params = entry.table === 'players' ? null : {'logfile_id': model.id};
+
+                                return models[entry.table]
+                                    .forge(entry.data)
+                                    .save(params, {transacting: t})
+                                    .catch((err) => {
+                                        // "there i fixed it" - ignore duplicate keys for players
+                                        if (entry.table === 'players') {
+                                            return;
+                                        }
+
+                                        throw err;
+                                    });
+                            }));
+                        });
+                })
+                .then(() => {
+                    const t1 = performance.now();
+                    this.server.logger(this.name, `Import of "${filename}" complete! Took ~${round2Decimal((t1 - t0)/1000)} seconds.`);
+                })
+                .catch(function(err) {
+                    console.error(err);
+                });
         });
-    }
-
-    getLineEvent(line) {
-        const parsedLine = this.parseLine(line);
-        const categoriesToLog = this.server.config.logEventsCategories;
-        const typesToLog = this.server.config.logEventsTypes;
-
-        if (!line) {
-            return null;
-        }
-
-        // if specific event categories are specified
-        // we only want to log events matching them.
-        if (categoriesToLog.length) {
-            if (!categoriesToLog.includes(event.category)) {
-                return null;
-            }
-        }
-
-        // if specific event types are specified
-        // we only want to log events matching them.
-        if (typesToLog.length) {
-            if (!event.type || !typesToLog.includes(event.type)) {
-                return null;
-            }
-        }
     }
 
     /**
@@ -186,169 +163,182 @@ class DayZParser {
      * @return {Promise}       resolves to an object
      */
     parseLine(string) {
-        /*const wasChatMessage = string.match(TEST_CHAT);
+        try {
+            const wasDamagedByPlayer = string.match(TEST_DAMAGE_PLAYER);
 
-        if (wasChatMessage) {
-            return {
-                category: 'chat',
-                timestamp: wasChatMessage[1],
-                datestamp: wasChatMessage[2],
-                player: wasChatMessage[3],
-                message: wasChatMessage[4],
-            };
-        }*/
+            if (wasDamagedByPlayer) {
+                return {
+                    table: 'damage',
+                    data: {
+                        timestamp: wasDamagedByPlayer[1],
+                        player_bisid: wasDamagedByPlayer[2],
+                        player_pos: wasDamagedByPlayer[3],
+                        player_hp: wasDamagedByPlayer[4],
+                        attacker_bisid: wasDamagedByPlayer[5],
+                        attacker_pos: wasDamagedByPlayer[5],
+                        body_part: wasDamagedByPlayer[6],
+                        damage: wasDamagedByPlayer[7],
+                        weapon: wasDamagedByPlayer[8],
+                        distance: wasDamagedByPlayer[8] || 0,
+                    },
+                };
+            }
 
-        const wasDamagedByNPC = string.match(TEST_DAMAGE_NPC);
+            const wasDamagedByNPC = string.match(TEST_DAMAGE_NPC);
 
-        if (wasDamagedByNPC) {
-            return {
-                table: 'damage',
-                data: {
-                    timestamp: wasDamagedByNPC[1],
-                    player_bisid: wasDamagedByNPC[2],
-                    player_pos: wasDamagedByNPC[3],
-                    player_hp: wasDamagedByNPC[4],
-                    attacker_npc: wasDamagedByNPC[5],
-                    body_part: wasDamagedByNPC[6],
-                    damage: wasDamagedByNPC[7],
-                    weapon: wasDamagedByNPC[8],
-                },
-            };
+            if (wasDamagedByNPC) {
+                return {
+                    table: 'damage',
+                    data: {
+                        timestamp: wasDamagedByNPC[1],
+                        player_bisid: wasDamagedByNPC[2],
+                        player_pos: wasDamagedByNPC[3],
+                        player_hp: wasDamagedByNPC[4],
+                        attacker_npc: wasDamagedByNPC[5],
+                        body_part: wasDamagedByNPC[6],
+                        damage: wasDamagedByNPC[7],
+                        weapon: wasDamagedByNPC[8],
+                    },
+                };
+            }
+
+            const wasDamagedByEnvironment = string.match(TEST_FALL_DAMAGE);
+
+            if (wasDamagedByEnvironment) {
+                return {
+                    table: 'damage',
+                    data: {
+                        timestamp: wasDamagedByEnvironment[1],
+                        player_bisid: wasDamagedByEnvironment[2],
+                        player_pos: wasDamagedByEnvironment[3],
+                        player_hp: wasDamagedByEnvironment[4],
+                        attacker_npc: 'falldamage',
+                    },
+                };
+            }
+
+            const waskilledByInfected = string.match(TEST_KILLED_BY_NPC);
+
+            if (waskilledByInfected) {
+                return {
+                    table: 'killed',
+                    data: {
+                        timestamp: waskilledByInfected[1],
+                        player_bisid: waskilledByInfected[2],
+                        player_pos: waskilledByInfected[3],
+                        attacker_npc: waskilledByInfected[5],
+                    },
+                };
+            }
+
+            const waskilledByPlayer = string.match(TEST_KILLED_BY_PLAYER);
+
+            if (waskilledByPlayer) {
+                return {
+                    table: 'killed',
+                    data: {
+                        timestamp: waskilledByPlayer[1],
+                        player_bisid: waskilledByPlayer[2],
+                        player_pos: waskilledByPlayer[3],
+                        attacker_bisid: waskilledByPlayer[4],
+                        attacker_pos: waskilledByPlayer[5],
+                        weapon: waskilledByPlayer[6],
+                        distance: waskilledByPlayer[7],
+                    },
+                };
+            }
+
+            const wasKilledGeneric = string.match(TEST_DIED_GENERIC);
+
+            if (wasKilledGeneric) {
+                return {
+                    table: 'killed',
+                    data: {
+                        timestamp: wasKilledGeneric[1],
+                        player_bisid: wasKilledGeneric[2],
+                        player_pos: wasKilledGeneric[3],
+                        attacker_npc: 'Unknown',
+                    },
+                };
+            }
+
+            const wasSuicide = string.match(TEST_SUICIDE);
+
+            if (wasSuicide) {
+                return {
+                    table: 'killed',
+                    data: {
+                        timestamp: wasSuicide[1],
+                        player_bisid: wasSuicide[2],
+                        attacker_npc: 'suicide',
+                    },
+                };
+            }
+
+            const wasBledOut = string.match(TEST_BLED_OUT);
+
+            if (wasBledOut) {
+                return {
+                    table: 'killed',
+                    data: {
+                        timestamp: wasBledOut[1],
+                        player_bisid: wasBledOut[2],
+                        attacker_npc: 'bleedout',
+                    },
+                };
+            }
+
+            const wasChatMessage = string.match(TEST_CHAT);
+
+            if (wasChatMessage) {
+                return {
+                    table: 'players',
+                    data: {
+                        player_name: wasChatMessage[2],
+                        player_steamid: wasChatMessage[3],
+                        player_bisid: wasChatMessage[4],
+                    },
+                };
+            }
+
+            /*const consciousnessChanged = string.match(TEST_CONSCIOUSNESS);
+
+            if (consciousnessChanged) {
+                return {
+                    category: 'status',
+                    type: 'consciousness',
+                    timestamp: consciousnessChanged[1],
+                    player: consciousnessChanged[2],
+                    playerPos: consciousnessChanged[3],
+                    status: consciousnessChanged[4],
+                };
+            }*/
+
+            /*const wasConneted = string.match(TEST_CONNECTED);
+
+            if (wasConneted) {
+                return {
+                    category: 'connect',
+                    timestamp: wasConneted[1],
+                    player: wasConneted[2],
+                    id: uuid,
+                };
+            }
+
+            const wasDisconneted = string.match(TEST_DISCONNECTED);
+
+            if (wasDisconneted) {
+                return {
+                    category: 'disconnect',
+                    timestamp: wasDisconneted[1],
+                    player: wasDisconneted[2],
+                };
+            }*/
+
+            return null;
+        } catch (err) {
+            console.log(err);
         }
-
-        const wasDamagedByPlayer = string.match(TEST_DAMAGE_PLAYER);
-
-        if (wasDamagedByPlayer) {
-            return {
-                table: 'damage',
-                data: {
-                    timestamp: wasDamagedByNPC[1],
-                    player_bisid: wasDamagedByNPC[2],
-                    player_pos: wasDamagedByNPC[3],
-                    player_hp: wasDamagedByNPC[4],
-                    attacker_bisid: wasDamagedByNPC[5],
-                    attacker_pos: wasDamagedByNPC[5],
-                    body_part: wasDamagedByNPC[6],
-                    damage: wasDamagedByNPC[7],
-                    weapon: wasDamagedByNPC[8],
-                    distance: wasDamagedByNPC[8] || 0,
-                },
-            };
-        }
-
-        const waskilledByInfected = string.match(TEST_KILLED_BY_NPC);
-
-        if (waskilledByInfected) {
-            return {
-                category: 'killed',
-                type: 'pve',
-                timestamp: waskilledByInfected[1],
-                player: waskilledByInfected[2],
-                killer: waskilledByInfected[3],
-            };
-        }
-
-        const waskilledByPlayer = string.match(TEST_KILLED_BY_PLAYER);
-
-        if (waskilledByPlayer) {
-            return {
-                category: 'killed',
-                type: 'pvp',
-                timestamp: waskilledByPlayer[1],
-                player: waskilledByPlayer[2],
-                playerPos: waskilledByPlayer[3],
-                killer: waskilledByPlayer[4],
-                killerPos: waskilledByPlayer[5],
-                weapon: waskilledByPlayer[6],
-            };
-        }
-
-        const wasKilledGeneric = string.match(TEST_DIED_GENERIC);
-
-        if (wasKilledGeneric) {
-            return {
-                category: 'killed',
-                type: 'unknown',
-                timestamp: wasKilledGeneric[1],
-                player: wasKilledGeneric[2],
-                killer: 'Unknown',
-                water: wasKilledGeneric[3],
-                energy: wasKilledGeneric[4],
-                bleeds: wasKilledGeneric[5],
-            };
-        }
-
-        /*const consciousnessChanged = string.match(TEST_CONSCIOUSNESS);
-
-        if (consciousnessChanged) {
-            return {
-                category: 'status',
-                type: 'consciousness',
-                timestamp: consciousnessChanged[1],
-                player: consciousnessChanged[2],
-                playerPos: consciousnessChanged[3],
-                status: consciousnessChanged[4],
-            };
-        }*/
-
-        const wasSuicide = string.match(TEST_SUICIDE);
-
-        if (wasSuicide) {
-            return {
-                category: 'killed',
-                type: 'suicide',
-                timestamp: wasSuicide[1],
-                player: wasSuicide[2],
-            };
-        }
-
-        const wasBledOut = string.match(TEST_BLED_OUT);
-
-        if (wasBledOut) {
-            return {
-                category: 'killed',
-                type: 'bleedout',
-                timestamp: wasBledOut[1],
-                player: wasBledOut[2],
-                killer: 'Unknown',
-            };
-        }
-
-        /*const wasConneted = string.match(TEST_CONNECTED);
-
-        if (wasConneted) {
-            return {
-                category: 'connect',
-                timestamp: wasConneted[1],
-                player: wasConneted[2],
-                id: uuid,
-            };
-        }
-
-        const wasDisconneted = string.match(TEST_DISCONNECTED);
-
-        if (wasDisconneted) {
-            return {
-                category: 'disconnect',
-                timestamp: wasDisconneted[1],
-                player: wasDisconneted[2],
-            };
-        }*/
-
-        const wasDamagedByEnvironment = string.match(TEST_FALL_DAMAGE);
-
-        if (wasDamagedByEnvironment) {
-            return {
-                category: 'damage',
-                type: 'environment',
-                timestamp: wasDamagedByEnvironment[1],
-                player: wasDamagedByEnvironment[2],
-                hp: wasDamagedByEnvironment[3],
-                damage: wasDamagedByEnvironment[4],
-            };
-        }
-
-        return null;
     }
 }
 
