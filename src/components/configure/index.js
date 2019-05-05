@@ -102,7 +102,7 @@ class Configure extends React.Component {
         logEventsTypes: [],
         discordStatus: 'Watching you..',
         postSystenEvents: false,
-        collectStats: false,
+        collectStats: true,
         databaseType: '',
         databaseHost: '',
         databasePort: null,
