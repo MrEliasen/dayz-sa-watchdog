@@ -1,5 +1,6 @@
 import Discord from 'discord.js';
 import {remote} from 'electron';
+import Hashids from 'hashids';
 
 /**
  * DiscordBot manager
@@ -55,11 +56,124 @@ class DiscordBot {
                 this.server.logger(this.name, 'Disconnected from server.');
             });
 
+            this.client.on('message', (message) => {
+                if (message.channel.type === 'dm') {
+                    this.handleDMs(message);
+                    return;
+                }
+
+                this.handleMessage(message);
+            });
+
             this.server.logger(this.name, 'Connecting..');
 
             // login to discord.
             this.client.login(this.server.config.discordToken);
         });
+    }
+
+    async handleDMs(message) {
+        try {
+            switch (message.content) {
+                case '!status':
+                    this.linkStatus(message);
+                    return;
+                case '!link':
+                    this.createLink(message);
+                    return;
+                case '!unlink':
+                    this.removeLink(message);
+                    return;
+            }
+        } catch (err) {
+            console.log(err);
+        }
+    }
+
+    linkStatus(message) {
+        const models = this.server.database.models;
+
+        return models.players
+            .where('discord_id', message.author.id)
+            .fetch()
+            .then((playerModel) => {
+                if (playerModel) {
+                    message.channel.send(`Your Discord account is linked to the DayZ SA account "${playerModel.get('player_name')}". If you would like to unlink, type \`!unlink\` (without the quotes).`);
+                } else {
+                    message.channel.send('Your Discord account is not linked to any DayZ SA account. If you would like to link your account, type `!link` (without the quotes).');
+                }
+
+                return playerModel;
+            });
+    }
+
+    createLink(message) {
+        const models = this.server.database.models;
+
+        return models.players
+            .where('discord_id', message.author.id)
+            .fetch()
+            .then((playerModel) => {
+                if (playerModel) {
+                    message.channel.send(`Your Discord account is already linked to the DayZ SA account "${playerModel.get('player_name')}". If you would like to unlink, type \`!unlink\` (without the quotes).`);
+                    return playerModel;
+                }
+
+                // fetch link token if it exists
+                return models.linkTokens
+                    .where('discord_id', message.author.id)
+                    .fetch()
+                    .then((tokenModel) => {
+                        if (tokenModel) {
+                            message.channel.send(`To link your Discord account to the UKR DayZ SA account, type this following sentence **exactly as it appears**, in the server\'s **direct** chat channel:\n\`\`\`!link ${tokenModel.get('token')}\`\`\`\nYour account will then be linked on next server restart. You can check your status by typing \`!status\` to me.`);
+                            return tokenModel;
+                        }
+
+                        const hash = new Hashids('' + message.author.id);
+                        const token = hash.encode(message.createdTimestamp);
+
+                        return models.linkTokens
+                            .forge({
+                                discord_id: message.author.id,
+                                token: token,
+                            })
+                            .save(null, {method: 'insert'})
+                            .then(() => {
+                                message.channel.send(`To link your Discord account to the UKR DayZ SA account, type this following sentence **exactly as it appears**, in the server\'s **direct** chat channel:\n\`!link ${token}\`\nYour account will then be linked on next server restart. You can check your status by typing \`!status\` to me.`);
+                            })
+                            .catch((err) => {
+                                console.error(err);
+                            });
+                    })
+                    .catch((err) => {
+                        console.error(err);
+                    });
+            })
+            .catch((err) => {
+                console.error(err);
+            });
+    }
+
+    removeLink(message) {
+        this.server.database.models.players
+            .where('discord_id', message.author.id)
+            .fetch()
+            .then((model) => {
+                if (!model) {
+                    message.channel.send('Your Discord account is not linked to any DayZ SA account.');
+                    return;
+                }
+
+                return model
+                    .set({discord_id: ''})
+                    .save()
+                    .then(() => {
+                        message.channel.send('Your Discord account is no longer linked to any DayZ SA account.');
+                    });
+            })
+            .catch((err) => {
+                console.error(err);
+            });
     }
 
     /**
