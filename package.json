@@ -73,11 +73,18 @@
         "babel-preset-react": "^6.24.1",
         "babel-preset-stage-2": "^6.24.1",
         "babel-register": "^6.26.0",
+        "bookshelf": "^0.14.2",
+        "chokidar": "^3.0.0",
         "discord.js": "^11.4.2",
         "dompurify": "^1.0.10",
         "electron-json-storage": "^4.1.6",
         "jsdom": "^15.0.0",
+        "knex": "0.13",
+        "mariasql": "^0.2.6",
         "moment": "^2.24.0",
+        "mysql": "^2.17.1",
+        "mysql2": "^1.6.5",
+        "pg": "^7.10.0",
         "react": "^16.6.3",
         "react-dom": "^16.6.3",
         "react-redux": "^6.0.0",
@@ -89,6 +96,7 @@
         "redux": "^4.0.1",
         "redux-promise": "^0.6.0",
         "semantic-ui-react": "^0.86.0",
+        "sqlite3": "^4.0.6",
         "uuid": "^3.3.2"
     }
 }
