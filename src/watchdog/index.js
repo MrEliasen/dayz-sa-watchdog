@@ -45,10 +45,26 @@ class Watchdog extends EventEmitter {
 
     async shutdown() {
         await this.logger(this.dayz.name, 'Stopping file watcher..');
-        await this.dayz.watcher.close();
+
+        try {
+            await this.dayz.watcher.close();
+        } catch (err) {
+            // we do not care..
+        }
+
+        try {
+            clearTimeout(this.dayz.retryDirectoryTimer);
+        } catch (err) {
+            // we do not care..
+        }
 
         await this.logger(this.discord.name, 'Disconnecting from discord..');
-        await this.discord.client.destroy();
+
+        try {
+            await this.discord.client.destroy();
+        } catch (err) {
+            // we do not care..
+        }
     }
 }
 
