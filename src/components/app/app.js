@@ -26,12 +26,10 @@ class App extends React.Component {
         return (
             <TransitionGroup className="transition-group">
                 <PageFade key={locationKey}>
-                    <section className="fix-container">
-                        <Switch location={this.props.location}>
-                            <Route exact path="/" component={Configure} />
-                            <Route exact path="/main" component={Main} />
-                        </Switch>
-                    </section>
+                    <Switch location={this.props.location}>
+                        <Route exact path="/" component={Configure} />
+                        <Route exact path="/main" component={Main} />
+                    </Switch>
                 </PageFade>
             </TransitionGroup>
         );
