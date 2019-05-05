@@ -39,10 +39,12 @@ class Watchdog extends EventEmitter {
     }
 
     async logger(component, msg) {
+        const logMessage = (typeof msg !== 'string' ? JSON.stringify(msg) : msg);
+
         this.emit('console', {
             timestamp: moment().format('MM/DD hh:mm a'),
             component,
-            msg,
+            msg: logMessage,
         });
     }
 

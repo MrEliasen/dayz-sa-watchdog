@@ -59,7 +59,7 @@ class Database {
             await this.import();
             this.createModels();
         } catch (err) {
-            console.log(err);
+            this.server.logger(this.name, err);
         }
     }
 
@@ -74,7 +74,7 @@ class Database {
         } = this.server.config;
 
         const options = {
-            debug: true,
+            debug: process.env.NODE_ENV === 'development',
             client: databaseType,
             acquireConnectionTimeout: 5000,
         };
@@ -86,10 +86,6 @@ class Database {
                 password: databasePassword,
                 database: databaseName,
                 multipleStatements: true,
-            };
-            options.pool = {
-                min: 0,
-                max: 7,
             };
 
             if (databasePort && databasePort !== '') {
@@ -124,7 +120,7 @@ class Database {
             const sql = fs.readFileSync(__dirname + '/tables.sql').toString();
             //await this.connection.raw(sql.toString());
         } catch (err) {
-            console.log(err);
+            this.server.logger(this.name, err);
         }
     }
 

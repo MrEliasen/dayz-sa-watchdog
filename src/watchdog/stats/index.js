@@ -70,7 +70,7 @@ class Stats {
                 ));
             })
             .catch((err) => {
-                this.server.lgger(JSON.stringifyerr);
+                this.server.logger(this.name, err);
             });
     }
 
@@ -106,7 +106,7 @@ class Stats {
                 ));
             })
             .catch((err) => {
-                this.server.lgger(JSON.stringifyerr);
+                this.server.logger(this.name, err);
             });
     }
 
@@ -182,7 +182,7 @@ class Stats {
                 ));
             })
             .catch((err) => {
-                this.server.lgger(JSON.stringifyerr);
+                this.server.logger(this.name, err);
             });
     }
 }

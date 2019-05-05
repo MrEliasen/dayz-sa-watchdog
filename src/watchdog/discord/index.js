@@ -99,7 +99,7 @@ class DiscordBot {
                     return;
             }
         } catch (err) {
-            console.log(err);
+            this.server.logger(this.name, err);
         }
     }
 
@@ -155,15 +155,15 @@ class DiscordBot {
                                 message.channel.send(`To link your Discord account to the UKR DayZ SA account, type this following sentence **exactly as it appears**, in the server\'s **direct** chat channel:\n\`link ${token}\`\nYour account will then be linked on next server restart. You can check your status by typing \`!status\` to me.`);
                             })
                             .catch((err) => {
-                                console.error(err);
+                                this.server.logger(this.name, err);
                             });
                     })
                     .catch((err) => {
-                        console.error(err);
+                        this.server.logger(this.name, err);
                     });
             })
             .catch((err) => {
-                console.error(err);
+                this.server.logger(this.name, err);
             });
     }
 
@@ -185,7 +185,7 @@ class DiscordBot {
                     });
             })
             .catch((err) => {
-                console.error(err);
+                this.server.logger(this.name, err);
             });
     }
 
@@ -200,7 +200,7 @@ class DiscordBot {
 
         this.channel
             .send(message.split('"').join('**'))
-            .catch(console.error);
+            .catch((err) => this.server.logger(this.name, err));
     }
 
     sendSystemMessage(message) {

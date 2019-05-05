@@ -217,7 +217,6 @@ class DayZParser {
      * @return {Promise}       resolves to an object
      */
     parseLine(string) {
-        console.log(string);
         try {
             const wasDamagedByPlayer = string.match(TEST_DAMAGE_PLAYER);
 
