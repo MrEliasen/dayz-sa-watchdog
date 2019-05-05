@@ -102,6 +102,7 @@ class DayZParser {
 
     importLogFile(filename) {
         const fullFilePath = `${this.server.config.logFileDirectory}/${filename}`;
+        const linkRequests = [];
 
         fs.readFile(fullFilePath, (err, data) => {
             if (err) {
@@ -136,25 +137,20 @@ class DayZParser {
 
                                 if (entry.table === 'players') {
                                     params = null;
-                                    entry.isLinkToken = entry.message.match(TEST_LINK_TOKEN);
+                                    entry.linkToken = entry.message.match(TEST_LINK_TOKEN);
+
+                                    if (entry.linkToken) {
+                                        linkRequests.push(entry);
+                                    }
                                 }
 
                                 return models[entry.table]
                                     .forge(entry.data)
                                     .save(params, {transacting: t, method: 'insert'})
-                                    .then((model) => {
-                                        if (entry.isLinkToken) {
-                                            this.linkAccounts(entry, entry.isLinkToken[1]);
-                                        }
-
-                                        return model;
-                                    })
                                     .catch((err) => {
                                         // "there i fixed it" - ignore duplicate keys for players
                                         if (entry.table === 'players') {
-                                            if (entry.isLinkToken) {
-                                                return this.linkAccounts(entry, entry.isLinkToken[1]);
-                                            }
+                                            return;
                                         }
 
                                         throw err;
@@ -162,7 +158,10 @@ class DayZParser {
                             }));
                         });
                 })
-                .then(() => {
+                .then(async () => {
+                    const requests = linkRequests.map((player) => this.linkAccounts(player));
+                    await Promise.all(requests);
+
                     const t1 = performance.now();
                     this.server.logger(this.name, `Import of "${filename}" complete! Took ~${round2Decimal((t1 - t0)/1000)} seconds.`);
                 })
@@ -172,9 +171,9 @@ class DayZParser {
         });
     }
 
-    async linkAccounts(player, token) {
+    async linkAccounts(player) {
         return this.server.database.models.linkTokens
-            .where('token', token)
+            .where('token', player.linkToken[1])
             .fetch()
             .then((tokenModel) => {
                 if (!tokenModel) {
@@ -190,15 +189,15 @@ class DayZParser {
                         }
 
                         return playerModel
-                            .set('discord_id', tokenModel.discord_id)
+                            .set('discord_id', tokenModel.get('discord_id'))
                             .save()
                             .then(() => {
-                                /*return this.server.database.models.linkTokens
-                                    .where('token', token)
+                                return this.server.database.models.linkTokens
+                                    .where('token', player.linkToken[1])
                                     .destroy()
                                     .catch((err) => {
                                         console.error(err);
-                                    });*/
+                                    });
                             })
                             .catch((err) => {
                                 console.error(err);
