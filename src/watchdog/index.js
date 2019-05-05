@@ -6,6 +6,7 @@ import {remote} from 'electron';
 import DayZ from './dayz';
 import Discord from './discord';
 import Database from './database';
+import Stats from './stats';
 
 /**
  * Watchdog main class
@@ -27,10 +28,12 @@ class Watchdog extends EventEmitter {
         this.database = new Database(this);
         this.discord = new Discord(this);
         this.dayz = new DayZ(this);
+        this.stats = new Stats(this);
 
         await this.database.load();
         await this.discord.load();
         await this.dayz.load();
+        await this.stats.load();
 
         this.logger('server', 'Running!');
     }
