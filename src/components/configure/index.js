@@ -213,7 +213,7 @@ class Configure extends React.Component {
                                 />
                             </Form.Field>
                         </Form.Group>
-                        <Form.Group widths='equal'>
+                        {/*<Form.Group widths='equal'>
                             <Form.Field>
                                 <label>Event Categories</label>
                                 <Select
@@ -234,7 +234,7 @@ class Configure extends React.Component {
                                 />
                                 <p><small>Select any specific event types (sub category, eg: Player Killed + PvP) to track, or leave empty for all.</small></p>
                             </Form.Field>
-                        </Form.Group>
+                        </Form.Group>*/}
                     </Segment>
 
                     <Divider horizontal>Player/Server Stats</Divider>
@@ -329,7 +329,7 @@ class Configure extends React.Component {
                             <Form.Field>
                                 <label>*Discord Channel ID</label>
                                 <Input defaultValue={discordChannelID} onChange={(e) => this.setState({discordChannelID: e.target.value})} placeholder="Bot authentication token" />
-                                <p><small>ID of the channel, in the above server, to post to. Right-click a channel in a Discord server and "Copy ID".</small></p>
+                                <p><small>ID of the channel to listen for commands in. If empty, only DMs are used. Right-click a channel in a Discord server and "Copy ID".</small></p>
                             </Form.Field>
                         </Form.Group>
                         <Form.Group widths='equal'>
