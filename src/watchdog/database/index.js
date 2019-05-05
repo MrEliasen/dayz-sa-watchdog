@@ -162,6 +162,9 @@ class Database {
         this.models.players = this.db.Model.extend({
             tableName: 'players',
             idAttribute: 'player_bisid',
+            defaults: {
+                discord_id: '',
+            },
         });
 
         this.models.linkTokens = this.db.Model.extend({
