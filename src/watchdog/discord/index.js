@@ -129,7 +129,7 @@ class DiscordBot {
             .then((playerModel) => {
                 if (playerModel) {
                     message.channel.send(`Your Discord account is already linked to the DayZ SA account "${playerModel.get('player_name')}". If you would like to unlink, type \`!unlink\`.`);
-                    return playerModel;
+                    return;
                 }
 
                 // fetch link token if it exists
@@ -138,7 +138,7 @@ class DiscordBot {
                     .fetch()
                     .then((tokenModel) => {
                         if (tokenModel) {
-                            message.channel.send(`To link your Discord account to the UKR DayZ SA account, type this following sentence **exactly as it appears**, in the server\'s **direct** chat channel:\n\`link ${tokenModel.get('token')}\`\nYour account will then be linked on next server restart. You can check your status by typing \`!status\` to me.`);
+                            message.channel.send(`To link your Discord account to the UKR DayZ SA account, type this following sentence __exactly as it appears__, in the DayZ server chat ("direct" channel is recommended):\n\n\`link ${tokenModel.get('token')}\`\n\n__Your account will then be linked on next server restart__. You can check your status by typing \`!status\` to me.`);
                             return tokenModel;
                         }
 
@@ -152,7 +152,7 @@ class DiscordBot {
                             })
                             .save(null, {method: 'insert'})
                             .then(() => {
-                                message.channel.send(`To link your Discord account to the UKR DayZ SA account, type this following sentence **exactly as it appears**, in the server\'s **direct** chat channel:\n\`link ${token}\`\nYour account will then be linked on next server restart. You can check your status by typing \`!status\` to me.`);
+                                message.channel.send(`To link your Discord account to the UKR DayZ SA account, type this following sentence __exactly as it appears__, in the DayZ server chat ("direct" channel is recommended):\n\n\`link ${token}\`\n\n__Your account will then be linked on next server restart__. You can check your status by typing \`!status\` to me.`);
                             })
                             .catch((err) => {
                                 this.server.logger(this.name, err);
