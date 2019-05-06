@@ -71,6 +71,10 @@ class Stats {
                 cmd: '!top damage distance',
                 desc: 'Show the top 10 list of longest player damage-shot.',
             },
+            {
+                cmd: '!top suicides',
+                desc: 'Show the top 10 list of players who killed themselves most times.',
+            },
         ];
         message.channel.send(templateCommandList(
             generalCommands.map((cmd) => `${cmd.cmd.padEnd(20, ' ')} | ${cmd.desc}`),
@@ -82,6 +86,8 @@ class Stats {
         switch (message.content.toLowerCase()) {
             case '!commands':
                 return this.commandList(message);
+            case '!top suicides':
+                return this.top10Suicides(message);
 
             //PvP
             case '!top kills':
@@ -93,6 +99,42 @@ class Stats {
             case '!top damage distance':
                 return this.top10DamageDistance(message);
         }
+    }
+
+    top10Suicides(message) {
+        this.server.database.connection
+            .raw(`SELECT
+                        players.player_name,
+                        COUNT(killed.player_bisid) as deaths
+                    FROM
+                        killed
+                    LEFT JOIN
+                        players
+                        ON players.player_bisid = killed.player_bisid
+                    WHERE
+                        killed.attacker_npc = 'suicide'
+                    GROUP BY
+                        killed.player_bisid
+                    ORDER BY
+                        deaths DESC
+                    LIMIT 10`)
+            .then((models) => {
+                let maxDeaths;
+
+                message.channel.send(templateTopList(
+                    'Most Suicides',
+                    models.map((p, index) => {
+                        if (index === 0) {
+                            maxDeaths = p.deaths.toString().length;
+                        }
+
+                        return `${p.deaths.toString().padStart(maxDeaths, ' ')} deaths | ${p.player_name||'-'}`;
+                    })
+                ));
+            })
+            .catch((err) => {
+                this.server.logger(this.name, err);
+            });
     }
 
     top10KillsPvP(message) {
