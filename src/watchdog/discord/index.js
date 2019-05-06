@@ -84,7 +84,7 @@ class DiscordBot {
 
     async handleDMs(message) {
         try {
-            switch (message.content) {
+            switch (message.content.toLowerCase()) {
                 case '!status':
                     this.linkStatus(message);
                     return;
