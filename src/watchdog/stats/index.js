@@ -26,6 +26,16 @@ ${whisperArray.join("\n")}
 \`\`\`
 `;
 
+const templateStats = (title, listArray) => `
+\`\`\`css
+${title}
+
+---------- [Stats] ----------
+${listArray.join("\n")}
+------------------------------
+\`\`\`
+`;
+
 /**
  * Stats manager
  */
@@ -101,6 +111,8 @@ class Stats {
         switch (message.content.toLowerCase()) {
             case '!commands':
                 return this.commandList(message);
+            case '!stats':
+                return this.playerStats(message);
             case '!top suicides':
                 return this.top10Suicides(message);
 
@@ -318,45 +330,54 @@ class Stats {
         }
     }
 
-    serverRankedStats(message) {
-        this.server.database.connection
-            .raw(`SELECT
-                        player_name,
-                        distance
-                    FROM
-                        damage
-                    LEFT JOIN
-                        players
-                        ON players.player_bisid = damage.attacker_bisid
-                    WHERE
-                        damage.attacker_bisid != ''
-                    GROUP BY
-                        damage.attacker_bisid
-                    ORDER BY
-                        distance * 1 DESC
-                    LIMIT 10`)
-            .then((models) => {
-                let maxDistance;
+    async playerStats(message) {
+        try {
+            const models = this.server.database.models;
 
-                message.channel.send(templateTopList(
-                    'Longest Damage Shot (PvP)',
-                    models.map((p, index) => {
-                        const roundedDistance = round2Decimal(parseInt(p.distance, 10)).toString();
+            const playerModel = await models.players
+                .where('discord_id', message.author.id)
+                .fetch();
 
-                        if (index === 0) {
-                            maxDistance = roundedDistance.length;
-                        }
+            if (!playerModel) {
+                message.channel.send(`<@${message.author.id}> You have not yet linked your account. DM me with the message \`!link\``);
+                return;
+            }
 
-                        return `${roundedDistance.padStart(maxDistance, ' ')} meters | ${p.player_name||'-'}`;
-                    })
-                ));
-            })
-            .catch((err) => {
-                this.server.logger(this.name, err);
-            });
+            const bisid = playerModel.get('player_bisid');
+
+            const weaponModel = await this.queries.queryMostUsedWeapons(1, bisid);
+            const suicideModel = await this.queries.queryMostSuicides(1, bisid);
+            const headshotModel = await this.queries.queryMostHeadShots(1, bisid);
+            const killsModel = await this.queries.queryMostKills(1, bisid);
+            const damageModel = await this.queries.queryMostDamageTaken(1, bisid);
+            const damgeGivenModel = await this.queries.queryMostDamageGiven(1, bisid);
+            const killDistanceModel = await this.queries.queryMostKillsDistance(1, bisid);
+            const damageDistanceModel = await this.queries.queryMostDamageDistance(1, bisid);
+
+            const stats = [
+                `[Kills]:               ${killsModel.length ? killsModel[0].kills : 0}`,
+                `[Headshots]:           ${headshotModel.length ? headshotModel[0].hits : 0}`,
+                `[Longest kill shot]:   ${killDistanceModel.length ? round2Decimal(killDistanceModel[0].distance) : 0}`,
+                `[Longest damage shot]: ${damageDistanceModel.length ? round2Decimal(damageDistanceModel[0].distance) : 0}`,
+                `[Damage Taken]:        ${damageModel.length ? damageModel[0].totalDamage : 0}`,
+                `[Damage Dealt]:        ${damgeGivenModel.length ? damgeGivenModel[0].totalDamage : 0}`,
+                `[Most Used Weapon]:    ${weaponModel.length ? weaponModel[0].weapon : '-'}`,
+                `[Suicides]:            ${suicideModel.length ? suicideModel[0].deaths : 0}`,
+            ];
+
+            const title = `DayZ SA Watchdog - Stats for "${message.author.username}"`;
+
+            if (message.channel.type === 'dm') {
+                message.channel.send(templateStats(title, stats));
+                return;
+            }
+
+            message.channel.send(`<@${message.author.id}>${templateStats(title, stats)}`);
+        } catch (err) {
+            console.log(err);
+            this.server.logger(this.name, err);
+        }
     }
-
-
 }
 
 export default Stats;

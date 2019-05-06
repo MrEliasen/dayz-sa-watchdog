@@ -16,7 +16,7 @@ class Queries {
         let filter = 'attacker_bisid != \'\'';
 
         if (filter_bisid) {
-            filter = `attacker_bisid = '${Sqlstring.escape(filter_bisid)}'`;
+            filter = `attacker_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
         return this.server.database.connection
@@ -27,6 +27,8 @@ class Queries {
                         damage
                     WHERE
                         ${filter}
+                    AND
+                        weapon != 'MeleeFist'
                     GROUP BY
                         weapon
                     ORDER BY
@@ -38,7 +40,7 @@ class Queries {
         let filter = '';
 
         if (filter_bisid) {
-            filter = `AND player_bisid = '${Sqlstring.escape(filter_bisid)}'`;
+            filter = `AND killed.player_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
         return this.server.database.connection
@@ -64,7 +66,7 @@ class Queries {
         let filter = 'damage.attacker_bisid != \'\'';
 
         if (filter_bisid) {
-            filter = `damage.attacker_bisid = '${Sqlstring.escape(filter_bisid)}'`;
+            filter = `damage.attacker_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
         return this.server.database.connection
@@ -91,7 +93,7 @@ class Queries {
         let filter = 'killed.attacker_bisid != \'\'';
 
         if (filter_bisid) {
-            filter = `killed.attacker_bisid = '${Sqlstring.escape(filter_bisid)}'`;
+            filter = `killed.attacker_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
         return this.server.database.connection
@@ -116,7 +118,7 @@ class Queries {
         let filter = 'damage.attacker_bisid != \'\'';
 
         if (filter_bisid) {
-            filter = `damage.attacker_bisid = '${Sqlstring.escape(filter_bisid)}'`;
+            filter = `damage.attacker_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
         return this.server.database.connection
@@ -141,7 +143,7 @@ class Queries {
         let filter = 'damage.attacker_bisid != \'\'';
 
         if (filter_bisid) {
-            filter = `damage.attacker_bisid = '${Sqlstring.escape(filter_bisid)}'`;
+            filter = `damage.attacker_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
         return this.server.database.connection
@@ -166,7 +168,7 @@ class Queries {
         let filter = 'killed.attacker_bisid != \'\'';
 
         if (filter_bisid) {
-            filter = `killed.attacker_bisid = '${Sqlstring.escape(filter_bisid)}'`;
+            filter = `killed.attacker_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
         return this.server.database.connection
@@ -191,7 +193,7 @@ class Queries {
         let filter = 'damage.attacker_bisid != \'\'';
 
         if (filter_bisid) {
-            filter = `damage.attacker_bisid = '${Sqlstring.escape(filter_bisid)}'`;
+            filter = `damage.attacker_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
         return this.server.database.connection
