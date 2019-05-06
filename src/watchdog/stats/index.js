@@ -75,6 +75,10 @@ class Stats {
                 cmd: '!top suicides',
                 desc: 'Show the top 10 list of players who killed themselves most times.',
             },
+            {
+                cmd: '!top spunge',
+                desc: 'Show the top 10 list of players who have taken the most damage in PvP.',
+            },
         ];
         message.channel.send(templateCommandList(
             generalCommands.map((cmd) => `${cmd.cmd.padEnd(20, ' ')} | ${cmd.desc}`),
@@ -98,6 +102,8 @@ class Stats {
                 return this.top10KillsDistance(message);
             case '!top damage distance':
                 return this.top10DamageDistance(message);
+            case '!top spunge':
+                return this.top10DamageTakenPvP(message);
         }
     }
 
@@ -165,6 +171,42 @@ class Stats {
                         }
 
                         return `${p.kills.toString().padStart(maxKills, ' ')} kills | ${p.player_name||'-'}`;
+                    })
+                ));
+            })
+            .catch((err) => {
+                this.server.logger(this.name, err);
+            });
+    }
+
+    top10DamageTakenPvP(message) {
+        this.server.database.connection
+            .raw(`SELECT
+                        player_name,
+                        COUNT(damage.damage) as totalDamage
+                    FROM
+                        damage
+                    LEFT JOIN
+                        players
+                        ON players.player_bisid = damage.player_bisid
+                    WHERE
+                        damage.attacker_bisid != ''
+                    GROUP BY
+                        damage.player_bisid
+                    ORDER BY
+                        totalDamage DESC
+                    LIMIT 10`)
+            .then((models) => {
+                let maxDamage;
+
+                message.channel.send(templateTopList(
+                    'Most Damage Taken (PvP)',
+                    models.map((p, index) => {
+                        if (index === 0) {
+                            maxDamage = p.totalDamage.toString().length;
+                        }
+
+                        return `${p.totalDamage.toString().padStart(maxDamage, ' ')} Damage | ${p.player_name||'-'}`;
                     })
                 ));
             })
