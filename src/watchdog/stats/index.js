@@ -1,3 +1,5 @@
+import Sqlstring from 'sqlstring';
+import Queries from './queries';
 import {round2Decimal} from '../../helper';
 
 const templateTopList = (title, listArray) => `
@@ -35,6 +37,7 @@ class Stats {
     constructor(server) {
         this.name = 'Stats';
         this.server = server;
+        this.queries = new Queries(server);
         this.server.logger(this.name, 'Component instantiated');
     }
 
@@ -57,19 +60,19 @@ class Stats {
         const generalCommands = [
             {
                 cmd: '!top kills',
-                desc: 'Show the top 10 list of most player kills (killing shot/hit).',
+                desc: 'Show the top 10 list of players with most kills (killing shot/hit).',
             },
             {
                 cmd: '!top damage',
-                desc: 'Show the top 10 list of most player damage done.',
+                desc: 'Show the top 10 list of players with most player damage done.',
             },
             {
                 cmd: '!top kill distance',
-                desc: 'Show the top 10 list of longest player kill-shot.',
+                desc: 'Show the top 10 list of players with longest player kill-shot.',
             },
             {
                 cmd: '!top damage distance',
-                desc: 'Show the top 10 list of longest player damage-shot.',
+                desc: 'Show the top 10 list of players with longest player damage-shot.',
             },
             {
                 cmd: '!top suicides',
@@ -78,6 +81,14 @@ class Stats {
             {
                 cmd: '!top spunge',
                 desc: 'Show the top 10 list of players who have taken the most damage in PvP.',
+            },
+            {
+                cmd: '!top weapons',
+                desc: 'Show the top 10 list of most used weapons (by damage done).',
+            },
+            {
+                cmd: '!top headshots',
+                desc: 'Show the top 10 list of players with most headshots.',
             },
         ];
         message.channel.send(templateCommandList(
@@ -104,192 +115,210 @@ class Stats {
                 return this.top10DamageDistance(message);
             case '!top spunge':
                 return this.top10DamageTakenPvP(message);
+            case '!top weapons':
+                return this.top10MostUsedWeapons(message);
+            case '!top headshots':
+                return this.top10MostHeadshots(message);
         }
     }
 
-    top10Suicides(message) {
-        this.server.database.connection
-            .raw(`SELECT
-                        players.player_name,
-                        COUNT(killed.player_bisid) as deaths
-                    FROM
-                        killed
-                    LEFT JOIN
-                        players
-                        ON players.player_bisid = killed.player_bisid
-                    WHERE
-                        killed.attacker_npc = 'suicide'
-                    GROUP BY
-                        killed.player_bisid
-                    ORDER BY
-                        deaths DESC
-                    LIMIT 10`)
-            .then((models) => {
-                let maxDeaths;
+    async top10MostUsedWeapons(message) {
+        try {
+            let models = await this.queries.queryMostUsedWeapons(10);
+            let maxDamage;
 
-                message.channel.send(templateTopList(
-                    'Most Suicides',
-                    models.map((p, index) => {
-                        if (index === 0) {
-                            maxDeaths = p.deaths.toString().length;
-                        }
+            if (!models) {
+                models = [];
+            }
 
-                        return `${p.deaths.toString().padStart(maxDeaths, ' ')} deaths | ${p.player_name||'-'}`;
-                    })
-                ));
-            })
-            .catch((err) => {
-                this.server.logger(this.name, err);
-            });
+            message.channel.send(templateTopList(
+                'Most Used Weapons (by damage done)',
+                models.map((p, index) => {
+                    if (index === 0) {
+                        maxDamage = p.total.toString().length;
+                    }
+
+                    return `${p.total.toString().padStart(maxDamage, ' ')} damage | ${p.weapon}`;
+                })
+            ));
+        } catch (err) {
+            this.server.logger(this.name, err);
+        }
     }
 
-    top10KillsPvP(message) {
-        this.server.database.connection
-            .raw(`SELECT
-                        player_name,
-                        COUNT(killed.player_bisid) as kills
-                    FROM
-                        killed
-                    LEFT JOIN
-                        players
-                        ON players.player_bisid = killed.attacker_bisid
-                    WHERE
-                        killed.attacker_bisid != ''
-                    GROUP BY
-                        killed.attacker_bisid
-                    ORDER BY
-                        kills DESC
-                    LIMIT 10`)
-            .then((models) => {
-                let maxKills;
+    async top10Suicides(message) {
+        try {
+            let models = await this.queries.queryMostSuicides(10);
+            let maxDeaths;
 
-                message.channel.send(templateTopList(
-                    'Most Kills (PvP)',
-                    models.map((p, index) => {
-                        if (index === 0) {
-                            maxKills = p.kills.toString().length;
-                        }
+            if (!models) {
+                models = [];
+            }
 
-                        return `${p.kills.toString().padStart(maxKills, ' ')} kills | ${p.player_name||'-'}`;
-                    })
-                ));
-            })
-            .catch((err) => {
-                this.server.logger(this.name, err);
-            });
+            message.channel.send(templateTopList(
+                'Most Suicides',
+                models.map((p, index) => {
+                    if (index === 0) {
+                        maxDeaths = p.deaths.toString().length;
+                    }
+
+                    return `${p.deaths.toString().padStart(maxDeaths, ' ')} deaths | ${p.player_name||'-'}`;
+                })
+            ));
+        } catch (err) {
+            this.server.logger(this.name, err);
+        }
     }
 
-    top10DamageTakenPvP(message) {
-        this.server.database.connection
-            .raw(`SELECT
-                        player_name,
-                        COUNT(damage.damage) as totalDamage
-                    FROM
-                        damage
-                    LEFT JOIN
-                        players
-                        ON players.player_bisid = damage.player_bisid
-                    WHERE
-                        damage.attacker_bisid != ''
-                    GROUP BY
-                        damage.player_bisid
-                    ORDER BY
-                        totalDamage DESC
-                    LIMIT 10`)
-            .then((models) => {
-                let maxDamage;
+    async top10MostHeadshots(message) {
+        try {
+            let models = await this.queries.queryMostHeadShots(10);
+            let maxHits;
 
-                message.channel.send(templateTopList(
-                    'Most Damage Taken (PvP)',
-                    models.map((p, index) => {
-                        if (index === 0) {
-                            maxDamage = p.totalDamage.toString().length;
-                        }
+            if (!models) {
+                models = [];
+            }
 
-                        return `${p.totalDamage.toString().padStart(maxDamage, ' ')} Damage | ${p.player_name||'-'}`;
-                    })
-                ));
-            })
-            .catch((err) => {
-                this.server.logger(this.name, err);
-            });
+            message.channel.send(templateTopList(
+                'Most Headshots',
+                models.map((p, index) => {
+                    if (index === 0) {
+                        maxHits = p.hits.toString().length;
+                    }
+
+                    return `${p.hits.toString().padStart(maxHits, ' ')} headshots | ${p.player_name||'-'}`;
+                })
+            ));
+        } catch (err) {
+            this.server.logger(this.name, err);
+        }
     }
 
-    top10DamagePvP(message) {
-        this.server.database.connection
-            .raw(`SELECT
-                        player_name,
-                        COUNT(damage.damage) as totalDamage
-                    FROM
-                        damage
-                    LEFT JOIN
-                        players
-                        ON players.player_bisid = damage.attacker_bisid
-                    WHERE
-                        damage.attacker_bisid != ''
-                    GROUP BY
-                        damage.attacker_bisid
-                    ORDER BY
-                        totalDamage DESC
-                    LIMIT 10`)
-            .then((models) => {
-                let maxDamage;
+    async top10KillsPvP(message) {
+        try {
+            let models = await this.queries.queryMostKills(10);
+            let maxKills;
 
-                message.channel.send(templateTopList(
-                    'Most Damage Dealt (PvP)',
-                    models.map((p, index) => {
-                        if (index === 0) {
-                            maxDamage = p.totalDamage.toString().length;
-                        }
+            if (!models) {
+                models = [];
+            }
 
-                        return `${p.totalDamage.toString().padStart(maxDamage, ' ')} Damage | ${p.player_name||'-'}`;
-                    })
-                ));
-            })
-            .catch((err) => {
-                this.server.logger(this.name, err);
-            });
+            message.channel.send(templateTopList(
+                'Most Kills',
+                models.map((p, index) => {
+                    if (index === 0) {
+                        maxKills = p.kills.toString().length;
+                    }
+
+                    return `${p.kills.toString().padStart(maxKills, ' ')} kills | ${p.player_name||'-'}`;
+                })
+            ));
+        } catch (err) {
+            this.server.logger(this.name, err);
+        }
     }
 
-    top10KillsDistance(message) {
-        this.server.database.connection
-            .raw(`SELECT
-                        player_name,
-                        distance
-                    FROM
-                        killed
-                    LEFT JOIN
-                        players
-                        ON players.player_bisid = killed.attacker_bisid
-                    WHERE
-                        killed.attacker_bisid != ''
-                    GROUP BY
-                        killed.attacker_bisid
-                    ORDER BY
-                        distance * 1 DESC
-                    LIMIT 10`)
-            .then((models) => {
-                let maxDistance;
+    async top10DamageTakenPvP(message) {
+        try {
+            let models = await this.queries.queryMostDamageTaken(10);
+            let maxDamage;
 
-                message.channel.send(templateTopList(
-                    'Longest Kill Shot (PvP)',
-                    models.map((p, index) => {
-                        const roundedDistance = round2Decimal(parseInt(p.distance, 10)).toString();
+            if (!models) {
+                models = [];
+            }
 
-                        if (index === 0) {
-                            maxDistance = roundedDistance.length;
-                        }
+            message.channel.send(templateTopList(
+                'Most Damage Taken (PvP)',
+                models.map((p, index) => {
+                    if (index === 0) {
+                        maxDamage = p.totalDamage.toString().length;
+                    }
 
-                        return `${roundedDistance.padStart(maxDistance, ' ')} meters | ${p.player_name||'-'}`;
-                    })
-                ));
-            })
-            .catch((err) => {
-                console.log(err);
-            });
+                    return `${p.totalDamage.toString().padStart(maxDamage, ' ')} Damage | ${p.player_name||'-'}`;
+                })
+            ));
+        } catch (err) {
+            this.server.logger(this.name, err);
+        }
     }
 
-    top10DamageDistance(message) {
+    async top10DamagePvP(message) {
+        try {
+            let models = await this.queries.queryMostDamageGiven(10);
+            let maxDamage;
+
+            if (!models) {
+                models = [];
+            }
+
+            message.channel.send(templateTopList(
+                'Most Damage Dealt (PvP)',
+                models.map((p, index) => {
+                    if (index === 0) {
+                        maxDamage = p.totalDamage.toString().length;
+                    }
+
+                    return `${p.totalDamage.toString().padStart(maxDamage, ' ')} Damage | ${p.player_name||'-'}`;
+                })
+            ));
+        } catch (err) {
+            this.server.logger(this.name, err);
+        }
+    }
+
+    async top10KillsDistance(message) {
+        try {
+            let models = await this.queries.queryMostKillsDistance(10);
+            let maxDistance;
+
+            if (!models) {
+                models = [];
+            }
+
+            message.channel.send(templateTopList(
+                'Longest Kill Shot (PvP)',
+                models.map((p, index) => {
+                    const roundedDistance = round2Decimal(parseInt(p.distance, 10)).toString();
+
+                    if (index === 0) {
+                        maxDistance = roundedDistance.length;
+                    }
+
+                    return `${roundedDistance.padStart(maxDistance, ' ')} meters | ${p.player_name||'-'}`;
+                })
+            ));
+        } catch (err) {
+            this.server.logger(this.name, err);
+        }
+    }
+
+    async top10DamageDistance(message) {
+        try {
+            let models = await this.queries.queryMostDamageDistance(10);
+            let maxDistance;
+
+            if (!models) {
+                models = [];
+            }
+
+            message.channel.send(templateTopList(
+                'Longest Damage Shot (PvP)',
+                models.map((p, index) => {
+                    const roundedDistance = round2Decimal(parseInt(p.distance, 10)).toString();
+
+                    if (index === 0) {
+                        maxDistance = roundedDistance.length;
+                    }
+
+                    return `${roundedDistance.padStart(maxDistance, ' ')} meters | ${p.player_name||'-'}`;
+                })
+            ));
+        } catch (err) {
+            this.server.logger(this.name, err);
+        }
+    }
+
+    serverRankedStats(message) {
         this.server.database.connection
             .raw(`SELECT
                         player_name,
@@ -326,6 +355,8 @@ class Stats {
                 this.server.logger(this.name, err);
             });
     }
+
+
 }
 
 export default Stats;
