@@ -7,6 +7,7 @@ import DayZ from './dayz';
 import Discord from './discord';
 import Database from './database';
 import Stats from './stats';
+import RCon from './rcon';
 
 /**
  * Watchdog main class
@@ -29,11 +30,12 @@ class Watchdog extends EventEmitter {
         this.discord = new Discord(this);
         this.dayz = new DayZ(this);
         this.stats = new Stats(this);
+        this.rcon = new RCon(this);
 
         await this.database.load();
         await this.discord.load();
         await this.dayz.load();
-        await this.stats.load();
+        await this.rcon.load();
 
         this.logger('server', 'Running!');
     }
