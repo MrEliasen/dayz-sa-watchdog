@@ -114,6 +114,31 @@ class Queries {
                     LIMIT ${limit}`);
     }
 
+    async queryMostDeaths(limit = 10, filter_bisid = null) {
+        let filter = 'killed.player_bisid != \'\'';
+
+        if (filter_bisid) {
+            filter = `killed.player_bisid = ${Sqlstring.escape(filter_bisid)}`;
+        }
+
+        return this.server.database.connection
+            .raw(`SELECT
+                        player_name,
+                        COUNT(killed.player_bisid) as deaths
+                    FROM
+                        killed
+                    LEFT JOIN
+                        players
+                        ON players.player_bisid = killed.player_bisid
+                    WHERE
+                        ${filter}
+                    GROUP BY
+                        killed.player_bisid
+                    ORDER BY
+                        deaths DESC
+                    LIMIT ${limit}`);
+    }
+
     async queryMostDamageTaken(limit = 10, filter_bisid = null) {
         let filter = 'damage.attacker_bisid != \'\'';
 

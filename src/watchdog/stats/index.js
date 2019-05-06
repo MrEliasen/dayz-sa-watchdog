@@ -17,12 +17,12 @@ const templateCommandList = (generalArray, whisperArray) => `
 \`\`\`css
 DayZ SA Watchdog - Commands
 
------ [Public Commands] -----
+---------- [Public Commands] ----------
 ${generalArray.join("\n")}
 
-------- [DM Commands] -------
+------------ [DM Commands] ------------
 ${whisperArray.join("\n")}
------------------------------
+---------------------------------------
 \`\`\`
 `;
 
@@ -65,6 +65,10 @@ class Stats {
                 cmd: '!status',
                 desc: 'See the linking status of your account. Whether enabled or not.',
             },
+            {
+                cmd: '!stats',
+                desc: 'See your DayZ account stats.',
+            },
         ];
 
         const generalCommands = [
@@ -100,6 +104,10 @@ class Stats {
                 cmd: '!top headshots',
                 desc: 'Show the top 10 list of players with most headshots.',
             },
+            {
+                cmd: '!top deaths',
+                desc: 'Show the top 10 list of players with most deaths.',
+            },
         ];
         message.channel.send(templateCommandList(
             generalCommands.map((cmd) => `${cmd.cmd.padEnd(20, ' ')} | ${cmd.desc}`),
@@ -131,6 +139,8 @@ class Stats {
                 return this.top10MostUsedWeapons(message);
             case '!top headshots':
                 return this.top10MostHeadshots(message);
+            case '!top deaths':
+                return this.top10Deaths(message);
         }
     }
 
@@ -330,6 +340,30 @@ class Stats {
         }
     }
 
+    async top10Deaths(message) {
+        try {
+            let models = await this.queries.queryMostDeaths(10);
+            let maxDeaths;
+
+            if (!models) {
+                models = [];
+            }
+
+            message.channel.send(templateTopList(
+                'Most Deaths (All Sources)',
+                models.map((p, index) => {
+                    if (index === 0) {
+                        maxDeaths = p.deaths.toString().length;
+                    }
+
+                    return `${p.deaths.toString().padStart(maxDeaths, ' ')} deaths | ${p.player_name||'-'}`;
+                })
+            ));
+        } catch (err) {
+            this.server.logger(this.name, err);
+        }
+    }
+
     async playerStats(message) {
         try {
             const models = this.server.database.models;
@@ -353,9 +387,11 @@ class Stats {
             const damgeGivenModel = await this.queries.queryMostDamageGiven(1, bisid);
             const killDistanceModel = await this.queries.queryMostKillsDistance(1, bisid);
             const damageDistanceModel = await this.queries.queryMostDamageDistance(1, bisid);
+            const deathModel = await this.queries.queryMostDeaths(1, bisid);
 
             const stats = [
                 `[Kills]:               ${killsModel.length ? killsModel[0].kills : 0}`,
+                `[Deaths]:              ${deathModel.length ? deathModel[0].deaths : 0}`,
                 `[Headshots]:           ${headshotModel.length ? headshotModel[0].hits : 0}`,
                 `[Longest kill shot]:   ${killDistanceModel.length ? round2Decimal(killDistanceModel[0].distance) : 0}`,
                 `[Longest damage shot]: ${damageDistanceModel.length ? round2Decimal(damageDistanceModel[0].distance) : 0}`,
