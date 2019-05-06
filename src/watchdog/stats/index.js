@@ -57,7 +57,7 @@ class Stats {
         const generalCommands = [
             {
                 cmd: '!top kills',
-                desc: 'Show the top 10 list of most player kills.',
+                desc: 'Show the top 10 list of most player kills (killing shot/hit).',
             },
             {
                 cmd: '!top damage',
