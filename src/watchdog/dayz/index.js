@@ -31,10 +31,9 @@ const TEST_FALL_DAMAGE = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" \(id=(.+) 
  */
 class DayZParser {
     loaded = false;
-    // will keep track of the last line of the file since last update cycle
-    lastLineIndex = 0;
-    // keeps track of all unparsed lines
-    unparsedLines = [];
+    // keeps track of all unimported logs
+    unImportedLogs = [];
+    unimportedLogsTotal = 0;
 
     /**
      * class constructor
@@ -65,6 +64,7 @@ class DayZParser {
             return;
         }
 
+        this.importTimer = null;
         this.watcher = chokidar.watch(this.server.config.logFileDirectory);
         this.watcher
             .on('add', (filePath, stats) => {
@@ -85,10 +85,26 @@ class DayZParser {
                 }
 
                 this.import(file);
+
+                if (this.importTimer !== null) {
+                    try {
+                        clearTimeout(this.importTimer);
+                    } catch (err) {
+                        // dont care
+                    }
+                }
+
+                this.importTimer = setTimeout(() => {
+                    this.importTimer = null;
+                    this.recursiveWaitImport();
+                }, 1000);
             });
 
         this.server.logger(this.name, `Tracking .ADM files in the "${this.server.config.logFileDirectory}" directory.`);
-        setTimeout(() => this.loaded = true, 2000);
+        // bit of a hack i know..
+        setTimeout(() => {
+            this.loaded = true;
+        }, 2000);
     }
 
     async import(filename) {
@@ -100,99 +116,126 @@ class DayZParser {
                     return;
                 }
 
-                this.importLogFile(filename);
+                this.unImportedLogs.push(filename);
+                this.unimportedLogsTotal++;
             }).catch((err) => {
                 console.error(err);
             });
     }
 
+    recursiveWaitImport = async () => {
+        if (this.unImportedLogs.length <= 0) {
+            if (this.unimportedLogsTotal === 0) {
+                return;
+            }
+
+            this.unimportedLogsTotal = 0;
+            this.server.logger(this.name, 'Import Complete!');
+            return;
+        }
+
+        const filePath = this.unImportedLogs.shift();
+        await this.importLogFile(filePath);
+        setTimeout(this.recursiveWaitImport, 150);
+    }
+
     importLogFile(filename) {
-        const fullFilePath = `${this.server.config.logFileDirectory}/${filename}`;
-        const linkRequests = [];
+        return new Promise((resolve, reject) => {
+            const fullFilePath = `${this.server.config.logFileDirectory}/${filename}`;
+            const linkRequests = [];
+            const logsLeft = this.unimportedLogsTotal - this.unImportedLogs.length;
 
-        fs.readFile(fullFilePath, (err, data) => {
-            if (err) {
-                this.server.logger(this.name, `Unable to read file "${fullFilePath}".`);
-                return;
-            }
+            fs.readFile(fullFilePath, (err, data) => {
+                if (err) {
+                    this.server.logger(this.name, `Unable to read file "${fullFilePath}".`);
+                    resolve();
+                    return;
+                }
 
-            const lines = data.toString().split('\n');
+                const lines = data.toString().split('\n');
 
-            this.server.logger(this.name, `Importing ${lines.length} lines from "${filename}"..`);
-            if (lines.length <= 0) {
-                return;
-            }
+                this.server.logger(this.name, `${logsLeft}/${this.unimportedLogsTotal} | Importing ${lines.length} lines from "${filename}"..`);
+                if (lines.length <= 0) {
+                    resolve();
+                    return;
+                }
 
-            const t0 = performance.now();
+                const t0 = performance.now();
 
-            this.server.database.db
-                .transaction((t) => {
-                    const models = this.server.database.models;
-                    const modelLogFile = models.logs.forge({
-                        file_name: filename,
-                    });
-
-                    return modelLogFile
-                        .save(null, {transacting: t})
-                        .tap((model) => {
-                            const parsedLines = lines.map((line) => this.parseLine(line));
-                            const entries = parsedLines.filter((line) => line);
-
-                            return Promise.all(entries.map((entry) => {
-                                let params = {'logfile_id': model.id};
-
-                                if (entry.table === 'players') {
-                                    params = null;
-                                    entry.linkToken = entry.message.match(TEST_LINK_TOKEN);
-
-                                    if (entry.linkToken) {
-                                        linkRequests.push(entry);
-                                    }
-                                }
-
-                                return models[entry.table]
-                                    .forge(entry.data)
-                                    .save(params, {transacting: t, method: 'insert'})
-                                    .catch((err) => {
-                                        // "there i fixed it" - ignore duplicate keys for players
-                                        if (entry.table === 'players') {
-                                            return models[entry.table]
-                                                .where('player_bisid', entry.data.player_bisid)
-                                                .fetch()
-                                                .then((currentPlayer) => {
-                                                    const params = {
-                                                        player_name: entry.player_name,
-                                                    };
-
-                                                    if (entry.data.player_steamid !== '') {
-                                                        params.player_steamid = entry.data.player_steamid;
-                                                    }
-
-                                                    return currentPlayer
-                                                        .save(params, {
-                                                            method: 'update',
-                                                            patch: true,
-                                                        }).catch((err) => {
-                                                            this.server.logger(this.name, 'Failed to update player data' + JSON.stringify(err));
-                                                        });
-                                                });
-                                        }
-
-                                        throw err;
-                                    });
-                            }));
+                this.server.database.db
+                    .transaction((t) => {
+                        const models = this.server.database.models;
+                        const modelLogFile = models.logs.forge({
+                            file_name: filename,
                         });
-                })
-                .then(async () => {
-                    const requests = linkRequests.map((player) => this.linkAccounts(player));
-                    await Promise.all(requests);
 
-                    const t1 = performance.now();
-                    this.server.logger(this.name, `Import of "${filename}" complete! Took ~${round2Decimal((t1 - t0)/1000)} seconds.`);
-                })
-                .catch(function(err) {
-                    console.error(err);
-                });
+                        return modelLogFile
+                            .save(null, {transacting: t})
+                            .tap((model) => {
+                                const parsedLines = lines.map((line) => this.parseLine(line));
+                                const entries = parsedLines.filter((line) => line);
+
+                                return Promise.all(entries.map((entry) => {
+                                    let params = {'logfile_id': model.id};
+
+                                    if (entry.table === 'players') {
+                                        params = null;
+                                        entry.linkToken = entry.message.match(TEST_LINK_TOKEN);
+
+                                        if (entry.linkToken) {
+                                            linkRequests.push(entry);
+                                        }
+                                    }
+
+                                    return models[entry.table]
+                                        .forge(entry.data)
+                                        .save(params, {transacting: t, method: 'insert'})
+                                        .catch((err) => {
+                                            // "there i fixed it" - ignore duplicate keys for players
+                                            if (entry.table === 'players') {
+                                                return models[entry.table]
+                                                    .where('player_bisid', entry.data.player_bisid)
+                                                    .fetch({require: true, transacting: t})
+                                                    .then((currentPlayer) => {
+                                                        currentPlayer
+                                                            .set('player_name', entry.player_name);
+
+                                                        if (entry.data.player_steamid !== '') {
+                                                            currentPlayer
+                                                                .set('player_steamid', entry.data.player_steamid);
+                                                        }
+
+                                                        currentPlayer
+                                                            .set('player_name', entry.player_name);
+
+                                                        return currentPlayer
+                                                            .save(null, {transacting: t})
+                                                            .catch((err) => {
+                                                                console.log(err);
+                                                                this.server.logger(this.name, 'Failed to update player data' + JSON.stringify(err));
+                                                                this.unImportedLogs = [];
+                                                            });
+                                                    });
+                                            }
+
+                                            throw err;
+                                        });
+                                }));
+                            });
+                    })
+                    .then(async () => {
+                        const requests = linkRequests.map((player) => this.linkAccounts(player));
+                        await Promise.all(requests);
+
+                        const t1 = performance.now();
+                        this.server.logger(this.name, `Log imported! Took ~${round2Decimal((t1 - t0)/1000)} seconds.`);
+                        resolve();
+                    })
+                    .catch(function(err) {
+                        console.error(err);
+                        resolve();
+                    });
+            });
         });
     }
 
