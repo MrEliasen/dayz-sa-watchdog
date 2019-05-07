@@ -4,6 +4,7 @@ import {withRouter, NavLink} from 'react-router-dom';
 import {connect} from 'react-redux';
 import {Container, Segment, Header, Button, Input, Form, Select, Divider, Checkbox} from 'semantic-ui-react';
 import storage from 'electron-json-storage';
+import Discord from 'discord.js';
 
 const databaseOptions = [
     /*{
@@ -46,6 +47,9 @@ class Configure extends React.Component {
         databaseName: '',
         databaseUser: '',
         databasePassword: '',
+        permissions: [],
+        roles: [],
+        discordLoading: false,
         loading: true,
     };
 
@@ -70,6 +74,50 @@ class Configure extends React.Component {
         });
     }
 
+    getRoles = () => {
+        try {
+            const {discordToken, discordServerID} = this.state;
+
+            if (discordToken === '' || discordServerID === '') {
+                return;
+            }
+
+            this.setState({discordLoading: true});
+
+            // Create the bot
+            this.client = new Discord.Client();
+
+            // Console log the client user when its logged in
+            this.client.on('ready', async () => {
+                const guild = this.client.guilds.get(discordServerID);
+                const roles = guild.roles.map((role) => {
+                    return {
+                        text: role.name,
+                        value: role.id,
+                    };
+                });
+
+                this.setState({
+                    discordLoading: false,
+                    roles: [
+                        {
+                            text: '',
+                            value: '',
+                        },
+                        ...roles,
+                    ],
+                });
+
+                this.client.destroy();
+            });
+
+            this.client.login(discordToken);
+        } catch (err) {
+            this.setState({discordLoading: false});
+            console.log(err);
+        }
+    }
+
     save = (redirect = false) => {
         try {
             this.setState({
@@ -78,6 +126,8 @@ class Configure extends React.Component {
 
             const settings = {...this.state};
             delete settings.loading;
+            delete settings.roles;
+            delete settings.discordLoading;
 
             storage.set('settings', settings, (error) => {
                 if (error) {
@@ -109,6 +159,9 @@ class Configure extends React.Component {
             databaseName,
             databaseUser,
             databasePassword,
+            permissions,
+            roles,
+            discordLoading,
         } = this.state;
 
         const requireDBDetails = (databaseType !== '' && databaseType !== 'sqlite3');
@@ -194,6 +247,41 @@ class Configure extends React.Component {
                                 <label>*Discord Channel ID</label>
                                 <Input defaultValue={discordChannelID} onChange={(e) => this.setState({discordChannelID: e.target.value})} placeholder="Bot authentication token" />
                                 <p><small>ID of the channel to listen for commands in. If empty, only DMs are used. Right-click a channel in a Discord server and "Copy ID".</small></p>
+                            </Form.Field>
+                        </Form.Group>
+                    </Segment>
+
+                    <Divider horizontal>Access Roles</Divider>
+
+                    <Segment>
+                        <Form.Group widths='equal'>
+                            <Form.Field>
+                                <label>Role with access to !logs</label>
+                                {
+                                    (discordToken === '' ||
+                                    discordServerID === '') &&
+                                    <p>Please enter discord details.</p>
+                                }
+                                {
+                                    discordToken !== '' &&
+                                    discordServerID !== '' &&
+                                    roles.length === 0 &&
+                                    <Button color="blue" disabled={discordLoading} onClick={this.getRoles}>{discordLoading ? 'Fetching..' : 'Fetch Discord Roles'}</Button>
+                                }
+                                {
+                                    discordToken !== '' &&
+                                    discordServerID !== '' &&
+                                    roles.length > 0 &&
+                                    <Select
+                                        options={roles}
+                                        value={permissions}
+                                        onChange={(e, {value}) => this.setState({permissions: value})}
+                                    />
+                                }
+                                <p><small>Select the admin/mod role who should have access to use the !logs command.</small></p>
+                            </Form.Field>
+                            <Form.Field>
+                                <p>More to come later no doubt!</p>
                             </Form.Field>
                         </Form.Group>
                     </Segment>

@@ -1,3 +1,4 @@
+import fs from 'fs';
 import Discord from 'discord.js';
 import {remote} from 'electron';
 import Hashids from 'hashids';
@@ -93,6 +94,9 @@ class DiscordBot {
                 case '!unlink':
                     this.removeLink(message);
                     return;
+                case '!logs':
+                    this.getLogs(message);
+                    return;
                 default:
                     this.server.stats.handleMessages(message);
                     return;
@@ -100,6 +104,36 @@ class DiscordBot {
         } catch (err) {
             this.server.logger(this.name, err);
         }
+    }
+
+    async getLogs(message) {
+        const {permissions, logFileDirectory} = this.server.config;
+        const member = await this.guild.fetchMember(message.author);
+        const hasRole = member.roles.get(permissions);
+        const msg = message.content.split('!logs');
+        const logfile = msg[0].trim();
+
+        if (!hasRole) {
+            return;
+        }
+
+        if (logfile !== '') {
+            const file = await this.fetchLogFile(logfile);
+            return;
+        }
+
+        fs.readdir(logFileDirectory, (err, files) => {
+            if (err) {
+                console.log(err);
+                this.server.logger(this.name, 'ERROR: ' + JSON.stringify(err));
+                return;
+            }
+
+            const list = files.map((file) => {
+                console.log(file);
+                return file;
+            });
+        });
     }
 
     linkStatus(message) {
