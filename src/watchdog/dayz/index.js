@@ -157,7 +157,26 @@ class DayZParser {
                                     .catch((err) => {
                                         // "there i fixed it" - ignore duplicate keys for players
                                         if (entry.table === 'players') {
-                                            return;
+                                            return models[entry.table]
+                                                .where('player_bisid', entry.data.player_bisid)
+                                                .fetch()
+                                                .then((currentPlayer) => {
+                                                    const params = {
+                                                        player_name: entry.player_name,
+                                                    };
+
+                                                    if (entry.data.player_steamid !== '') {
+                                                        params.player_steamid = entry.data.player_steamid;
+                                                    }
+
+                                                    return currentPlayer
+                                                        .save(params, {
+                                                            method: 'update',
+                                                            patch: true,
+                                                        }).catch((err) => {
+                                                            this.server.logger(this.name, 'Failed to update player data' + JSON.stringify(err));
+                                                        });
+                                                });
                                         }
 
                                         throw err;
