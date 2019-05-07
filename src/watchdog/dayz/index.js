@@ -80,7 +80,6 @@ class DayZParser {
                 if (file === 'DayZServer_x64.ADM') {
                     if (this.loaded) {
                         this.server.logger(this.name, 'Server restart detected.');
-                        this.server.discord.sendSystemMessage('Server restart detected.');
                     }
                     return;
                 }

@@ -5,66 +5,6 @@ import {connect} from 'react-redux';
 import {Container, Segment, Header, Button, Input, Form, Select, Divider, Checkbox} from 'semantic-ui-react';
 import storage from 'electron-json-storage';
 
-
-
-const categoryOptions = [
-    {
-        text: 'Player connected',
-        value: 'connect',
-    },
-    {
-        text: 'Player disconnected',
-        value: 'disconnect',
-    },
-    {
-        text: 'Player damage',
-        value: 'damage',
-    },
-    {
-        text: 'Player killed',
-        value: 'killed',
-    },
-    {
-        text: 'Chat message',
-        value: 'chat',
-    },
-    {
-        text: 'Player Status Changes',
-        value: 'status',
-    },
-];
-
-const typeOptions = [
-    {
-        text: 'PVE',
-        value: 'pve',
-    },
-    {
-        text: 'PVP',
-        value: 'pvp',
-    },
-    {
-        text: 'Suicides',
-        value: 'suicide',
-    },
-    {
-        text: 'Bleedouts',
-        value: 'bleedout',
-    },
-    {
-        text: 'Consciousness',
-        value: 'consciousness',
-    },
-    {
-        text: 'Environment',
-        value: 'environment',
-    },
-    {
-        text: 'Unknown',
-        value: 'unknown',
-    },
-];
-
 const databaseOptions = [
     /*{
         text: '',
@@ -98,10 +38,7 @@ class Configure extends React.Component {
         discordToken: '',
         discordServerID: '',
         discordChannelID: '',
-        logEventsCategories: [],
-        logEventsTypes: [],
         discordStatus: 'Watching you..',
-        postSystenEvents: false,
         collectStats: true,
         databaseType: '',
         databaseHost: '',
@@ -165,7 +102,6 @@ class Configure extends React.Component {
             discordServerID,
             discordChannelID,
             discordStatus,
-            postSystenEvents,
             collectStats,
             databaseType,
             databaseHost,
@@ -213,53 +149,11 @@ class Configure extends React.Component {
                                 />
                             </Form.Field>
                         </Form.Group>
-                        {/*<Form.Group widths='equal'>
-                            <Form.Field>
-                                <label>Event Categories</label>
-                                <Select
-                                    multiple
-                                    options={categoryOptions}
-                                    value={this.state.logEventsCategories}
-                                    onChange={(e, {value}) => this.setState({logEventsCategories: value})}
-                                />
-                                <p><small>Select any specific event categories to track, or leave empty for all.</small></p>
-                            </Form.Field>
-                            <Form.Field>
-                                <label>Tracked Event Types</label>
-                                <Select
-                                    multiple
-                                    options={typeOptions}
-                                    defaultValue={this.state.logEventsTypes}
-                                    onChange={(e, {value}) => this.setState({logEventsTypes: value})}
-                                />
-                                <p><small>Select any specific event types (sub category, eg: Player Killed + PvP) to track, or leave empty for all.</small></p>
-                            </Form.Field>
-                        </Form.Group>*/}
                     </Segment>
 
                     <Divider horizontal>Player/Server Stats</Divider>
 
                     <Segment>
-                        {/*<Form.Group widths='equal'>
-                            <Form.Field>
-                                <Checkbox
-                                    label="Collect Stats"
-                                    onChange={() => this.setState({collectStats: !collectStats})}
-                                    checked={collectStats}
-                                    toggle
-                                />
-                                <p><small>Stat collections will basically store the parsed log files' content in a database and allow certain metrics to be made available to players or the Discord server in general. Database settings will appear if collection is enabled.</small></p>
-                            </Form.Field>
-                            <Form.Field>
-                                <label>Database Type</label>
-                                <Select
-                                    options={databaseOptions}
-                                    value={databaseType}
-                                    onChange={(e, {value}) => this.setState({databaseType: value})}
-                                />
-                                <p><small>Please choose the type of database to store the log file stats in.</small></p>
-                            </Form.Field>
-                        </Form.Group>*/}
                         <Form.Group widths='equal'>
                             <Form.Field>
                                 <label>Database Type</label>
@@ -274,46 +168,8 @@ class Configure extends React.Component {
                                 <p>SQLite3 comes bundled with this app and will not require any additional details. Just remember to backup the database file, found in the <span className="app-link" onClick={() => shell.openItem(remote.app.getPath('userData'))}>app-data directory</span>. You can also delete the database file and restart the watchdog to re-import all data.</p>
                             </Form.Field>
                         </Form.Group>
-                        {/*
-                            //collectStats &&
-                            requireDBDetails &&
-                            <React.Fragment>
-                                <Divider />
-                                <Form.Group widths='equal'>
-                                    <Form.Field>
-                                        <label>Database Host</label>
-                                        <Input defaultValue={databaseHost} onChange={(e) => this.setState({databaseHost: e.target.value})} />
-                                        <p><small>Where the database is located (FQDN or IP).</small></p>
-                                    </Form.Field>
-                                    <Form.Field>
-                                        <label>Database Port</label>
-                                        <Input defaultValue={databasePort} onChange={(e) => this.setState({databasePort: e.target.value})} />
-                                        <p><small>Only change if your database runs on anything but the default port.</small></p>
-                                    </Form.Field>
-                                    <Form.Field>
-                                    </Form.Field>
-                                </Form.Group>
-                                <Form.Group widths='equal'>
-                                    <Form.Field>
-                                        <label>Database Name</label>
-                                        <Input defaultValue={databaseName} onChange={(e) => this.setState({databaseName: e.target.value})} />
-                                        <p><small>The name of the database.</small></p>
-                                    </Form.Field>
-                                    <Form.Field>
-                                        <label>Database Username</label>
-                                        <Input defaultValue={databaseUser} onChange={(e) => this.setState({databaseUser: e.target.value})} />
-                                        <p><small>Database user with access to the database.</small></p>
-                                    </Form.Field>
-                                    <Form.Field>
-                                        <label>Database Password</label>
-                                        <Input type="password" defaultValue={databasePassword} onChange={(e) => this.setState({databasePassword: e.target.value})} />
-                                        <p><small>The password for the database user.</small></p>
-                                    </Form.Field>
-                                </Form.Group>
-                            </React.Fragment>
-                        */}
                     </Segment>
-                    
+
                     <Divider horizontal>Discord Settings</Divider>
                     <Segment>
                         <Form.Group widths='equal'>
@@ -340,19 +196,6 @@ class Configure extends React.Component {
                                 <p><small>ID of the channel to listen for commands in. If empty, only DMs are used. Right-click a channel in a Discord server and "Copy ID".</small></p>
                             </Form.Field>
                         </Form.Group>
-                        {/*<Form.Group widths='equal'>
-                            <Form.Field>
-                                <Checkbox
-                                    label="Post DayZ Watchdog Events"
-                                    onChange={() => this.setState({postSystenEvents: !postSystenEvents})}
-                                    checked={postSystenEvents}
-                                    toggle
-                                />
-                                <p><small>Post a message when the app connects, when it detects a server restart, and similar key events in Discord.</small></p>
-                            </Form.Field>
-                            <Form.Field>
-                            </Form.Field>
-                        </Form.Group>*/}
                     </Segment>
 
                     <div style={{textAlign: 'right'}}>

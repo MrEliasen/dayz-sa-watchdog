@@ -47,7 +47,7 @@ class DiscordBot {
 
                 this.server.logger(this.name, `Connected to server "${this.guild.name}"`);
                 this.server.logger(this.name, `Target channel is "${this.channel.name}"`);
-                this.sendSystemMessage(`v${remote.app.getVersion()} connected.`);
+                this.server.logger(`v${remote.app.getVersion()} running..`);
                 resolve();
             });
 
@@ -201,16 +201,6 @@ class DiscordBot {
         this.channel
             .send(message.split('"').join('**'))
             .catch((err) => this.server.logger(this.name, err));
-    }
-
-    sendSystemMessage(message) {
-        /*if (!this.server.config.postSystenEvents) {
-            return;
-        }
-
-        this.channel
-            .send(message, {code: true})
-            .catch(console.error);*/
     }
 }
 
