@@ -87,6 +87,12 @@ class Database {
                 multipleStatements: true,
             };
 
+            options.pool = {
+                min: 2,
+                max: 6,
+                propagateCreateError: false,
+            };
+
             if (databasePort && databasePort !== '') {
                 options.connection.port = databasePort;
             }
