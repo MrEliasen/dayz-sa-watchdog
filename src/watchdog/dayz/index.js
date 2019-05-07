@@ -14,7 +14,8 @@ const DOMPurify = createDOMPurify(window);
 const TEST_LINK_TOKEN = /^link ([a-z0-9]+)$/i;
 const TEST_CONNECTED = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" is connected \(id=(.+)\)/i;
 const TEST_DISCONNECTED = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+"\(id=(.+)\) has been disconnected/i;
-const TEST_CHAT = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| \[.+\] \[Chat\] (.+)\(steamid=(.+), bisid=(.+)\) (.+)/i;
+const TEST_GLOBAL_CHAT = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| \[.+\] \[Chat\] (.+)\(steamid=(.+), bisid=(.+)\) (.+)/i;
+const TEST_DIRECT_CHAT = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| (?:Chat\("(.+)"\(id=(.+)\)\):) (.+)/i;
 const TEST_DAMAGE_NPC = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" \(id=(.+) pos\=\<(.+)\>\)\[HP: ([0-9\.]+)\] hit by ((?!player).+) (?:into (.+)\([0-9]+\)) for ([0-9.]+) damage \((.+)\)/i;
 const TEST_DAMAGE_PLAYER = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+"(?: \(dead\))? \(id=(.+) pos=\<(.+)\>\)\[HP: (.+)\] hit by Player ".+" \(id=(.+) pos=\<(.+)\>\) (?:into )?(.+)\([0-9]+\) for (.+) damage(?: \((MeleeFist)\)|(?: \(.+\))? with (.+(?=from (.+) meters)|.+))/i;
 const TEST_KILLED_BY_NPC = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" \(DEAD\) \(id=(.+) pos=\<(.+)\>\) killed by (?!player)(.+)/i;
@@ -347,17 +348,31 @@ class DayZParser {
                 };
             }
 
-            const wasChatMessage = string.match(TEST_CHAT);
+            const wasGlobalChatMessage = string.match(TEST_GLOBAL_CHAT);
 
-            if (wasChatMessage) {
+            if (wasGlobalChatMessage) {
                 return {
                     table: 'players',
                     data: {
-                        player_name: wasChatMessage[2],
-                        player_steamid: wasChatMessage[3],
-                        player_bisid: wasChatMessage[4],
+                        player_name: wasGlobalChatMessage[2],
+                        player_steamid: wasGlobalChatMessage[3],
+                        player_bisid: wasGlobalChatMessage[4],
                     },
-                    message: wasChatMessage[5],
+                    message: wasGlobalChatMessage[5],
+                };
+            }
+
+            const wasDirectChatMessage = string.match(TEST_DIRECT_CHAT);
+
+            if (wasDirectChatMessage) {
+                return {
+                    table: 'players',
+                    data: {
+                        player_name: wasDirectChatMessage[2],
+                        player_steamid: '',
+                        player_bisid: wasDirectChatMessage[3],
+                    },
+                    message: wasDirectChatMessage[4],
                 };
             }
 
