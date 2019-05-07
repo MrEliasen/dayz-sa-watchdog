@@ -47,7 +47,6 @@ class DiscordBot {
 
                 this.server.logger(this.name, `Connected to server "${this.guild.name}"`);
                 this.server.logger(this.name, `Target channel is "${this.channel.name}"`);
-                this.server.logger(`v${remote.app.getVersion()} running..`);
                 resolve();
             });
 
