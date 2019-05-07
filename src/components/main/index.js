@@ -1,7 +1,7 @@
 import React from 'react';
 import {withRouter, NavLink} from 'react-router-dom';
 import {connect} from 'react-redux';
-import {Button, Container, Segment, Divider} from 'semantic-ui-react';
+import {Button, Container, Segment, Divider, Ref} from 'semantic-ui-react';
 import storage from 'electron-json-storage';
 import Server from '../../watchdog';
 
@@ -11,6 +11,12 @@ class Main extends React.Component {
         muted: false,
         connected: false,
     };
+
+    $console = React.createRef()
+
+    constructor() {
+        super();
+    }
 
     componentDidMount() {
         storage.get('settings', (error, settings) => {
@@ -25,6 +31,12 @@ class Main extends React.Component {
             // start the server
             this.server.init();
         });
+    }
+
+    componentDidUpdate() {
+        if (this.$console) {
+            this.$console.current.scrollTop = this.$console.current.scrollHeight;
+        }
     }
 
     toggleNotifications = () => {
@@ -42,17 +54,19 @@ class Main extends React.Component {
 
         return (
             <Container className="c-main">
-                <Segment placeholder>
-                    {
-                        logs.map((log, index) => {
-                            if (log.component === 'server') {
-                                return <Divider key={index} horizontal>{log.msg}</Divider>;
-                            }
+                <Ref innerRef={this.$console}>
+                    <Segment placeholder>
+                        {
+                            logs.map((log, index) => {
+                                if (log.component === 'server') {
+                                    return <Divider key={index} horizontal>{log.msg}</Divider>;
+                                }
 
-                            return <p key={index}><strong className="timestamp">[{log.timestamp}]</strong><strong>[{log.component}]</strong>: <span>{log.msg}</span></p>;
-                        })
-                    }
-                </Segment>
+                                return <p key={index}><strong className="timestamp">[{log.timestamp}]</strong><strong>[{log.component}]</strong>: <span>{log.msg}</span></p>;
+                            })
+                        }
+                    </Segment>
+                </Ref>
                 <Button floated='left' color='black' onClick={this.shutdown}>Change Settings (Disconnect)</Button>
                 {
                     this.state.muted &&
