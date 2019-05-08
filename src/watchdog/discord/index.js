@@ -200,9 +200,9 @@ class DiscordBot {
             });
 
             message.channel
-                .send(`Please react with the appropriate reaction to receive that log file.\nI will send you the file in 15 seconds:\n${outputList.join("\n")}`)
+                .send(`Please react with the appropriate reaction to receive that log file.\nI will send you the file in **15 seconds**:\n\n${outputList.join("\n")}`)
                 .then((logsMessage) => {
-                    logsMessage.awaitReactions((reaction, user) => user.id === message.author.id, {time: 6000})
+                    logsMessage.awaitReactions((reaction, user) => user.id === message.author.id, {time: 15000})
                         .then((collected) => {
                             const reaction = collected.first();
 
@@ -219,7 +219,7 @@ class DiscordBot {
                                 return;
                             }
 
-                            const attachment = new Discord.Attachment(`${logFileDirectory}${path.sep}${filename}`);
+                            const attachment = new Discord.Attachment(`${logFileDirectory}${path.sep}${filename}`, filename);
                             message.channel
                                 .send('', attachment)
                                 .catch(console.error);
