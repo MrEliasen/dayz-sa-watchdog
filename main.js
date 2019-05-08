@@ -1,6 +1,7 @@
 // Modules to control application life and create native browser window
-const {app, BrowserWindow} = require('electron');
+const {app, BrowserWindow, ipcMain} = require('electron');
 const path = require('path');
+const Discord = require('discord.js');
 
 if (process.env.NODE_ENV === 'development') {
     require('electron-reload')(__dirname);
@@ -74,4 +75,22 @@ app.on('activate', function() {
     if (mainWindow === null) {
         createWindow();
     }
+});
+
+let client;
+ipcMain.on('connect', (event, args) => {
+    // Create the bot
+    client = new Discord.Client();
+    client.login(args.discordToken);
+});
+ipcMain.on('disconnect', (event, args) => {
+    client.destroy();
+});
+ipcMain.on('sendFile', (event, args) => {
+    client.fetchUser(args.userId)
+        .then((user) => {
+            const attachment = new Discord.Attachment(args.filePath, args.fileName);
+            user.send('', attachment).catch(console.error);
+        })
+        .catch(console.log);
 });

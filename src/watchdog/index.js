@@ -69,6 +69,12 @@ class Watchdog extends EventEmitter {
         } catch (err) {
             // we do not care..
         }
+
+        try {
+            ipcRenderer.sendSync('disconnect', {});
+        } catch (err) {
+            // we do not care..
+        }
     }
 }
 

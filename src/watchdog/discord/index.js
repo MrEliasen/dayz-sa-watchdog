@@ -1,8 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import Discord from 'discord.js';
-import {remote} from 'electron';
+import {remote, ipcRenderer} from 'electron';
 import Hashids from 'hashids';
+
 
 /**
  * DiscordBot manager
@@ -80,6 +81,9 @@ class DiscordBot {
 
             // login to discord.
             this.client.login(this.server.config.discordToken);
+            ipcRenderer.send('connect', {
+                discordToken: this.server.config.discordToken,
+            });
         });
     }
 
@@ -196,13 +200,13 @@ class DiscordBot {
                     },
                 };
 
-                return `${indicators[index].string} = ${stamp.year}/${stamp.month}/${stamp.day} @ ${stamp.time.hour}:${stamp.time.minute}:${stamp.time.second}`;
+                return `${indicators[index].string} = ${stamp.year}/${stamp.month}/${stamp.day} @ ${stamp.time.hour}:${stamp.time.minute}`;
             });
 
             message.channel
-                .send(`Please react with the appropriate reaction to receive that log file.\nI will send you the file in **15 seconds**:\n\n${outputList.join("\n")}`)
+                .send(`Please react with the appropriate reaction to receive that log file.\nI will send you the file in **10 seconds**:\n\n${outputList.join("\n")}`)
                 .then((logsMessage) => {
-                    logsMessage.awaitReactions((reaction, user) => user.id === message.author.id, {time: 15000})
+                    logsMessage.awaitReactions((reaction, user) => user.id === message.author.id, {time: 10000})
                         .then((collected) => {
                             const reaction = collected.first();
 
@@ -219,10 +223,11 @@ class DiscordBot {
                                 return;
                             }
 
-                            const attachment = new Discord.Attachment(`${logFileDirectory}${path.sep}${filename}`, filename);
-                            message.channel
-                                .send('', attachment)
-                                .catch(console.error);
+                            ipcRenderer.send('sendFile', {
+                                filePath: `${logFileDirectory}${path.sep}${filename}`,
+                                fileName: filename,
+                                userId: message.author.id,
+                            });
                         })
                         .catch(console.error);
                 });
