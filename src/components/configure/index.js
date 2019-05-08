@@ -126,7 +126,6 @@ class Configure extends React.Component {
 
             const settings = {...this.state};
             delete settings.loading;
-            delete settings.roles;
             delete settings.discordLoading;
 
             storage.set('settings', settings, (error) => {
@@ -257,31 +256,27 @@ class Configure extends React.Component {
                         <Form.Group widths='equal'>
                             <Form.Field>
                                 <label>Role with access to !logs</label>
-                                {
-                                    (discordToken === '' ||
-                                    discordServerID === '') &&
-                                    <p>Please enter discord details.</p>
-                                }
-                                {
-                                    discordToken !== '' &&
-                                    discordServerID !== '' &&
-                                    roles.length === 0 &&
-                                    <Button color="blue" disabled={discordLoading} onClick={this.getRoles}>{discordLoading ? 'Fetching..' : 'Fetch Discord Roles'}</Button>
-                                }
-                                {
-                                    discordToken !== '' &&
-                                    discordServerID !== '' &&
-                                    roles.length > 0 &&
-                                    <Select
-                                        options={roles}
-                                        value={permissions}
-                                        onChange={(e, {value}) => this.setState({permissions: value})}
-                                    />
-                                }
+                                <Select
+                                    options={roles}
+                                    value={permissions}
+                                    onChange={(e, {value}) => this.setState({permissions: value})}
+                                />
                                 <p><small>Select the admin/mod role who should have access to use the !logs command.</small></p>
                             </Form.Field>
                             <Form.Field>
-                                <p>More to come later no doubt!</p>
+                                <Form.Field>
+                                    <label>Fetch the latest list of user roles</label>
+                                    {
+                                        (discordToken === '' ||
+                                        discordServerID === '') &&
+                                        <p>Please enter discord details.</p>
+                                    }
+                                    {
+                                        discordToken !== '' &&
+                                        discordServerID !== '' &&
+                                        <Button color="blue" disabled={discordLoading} onClick={this.getRoles}>{discordLoading ? 'Fetching..' : 'Fetch Discord Roles'}</Button>
+                                    }
+                                </Form.Field>
                             </Form.Field>
                         </Form.Group>
                     </Segment>
