@@ -5,6 +5,7 @@ import {connect} from 'react-redux';
 import {Container, Segment, Header, Button, Input, Form, Select, Divider, Checkbox} from 'semantic-ui-react';
 import storage from 'electron-json-storage';
 import Discord from 'discord.js';
+import Database from '../../watchdog/database';
 
 const databaseOptions = [
     /*{
@@ -49,7 +50,10 @@ class Configure extends React.Component {
         databasePassword: '',
         permissions: [],
         roles: [],
+        players: [],
+        ignore: [],
         discordLoading: false,
+        playersLoading: false,
         loading: true,
     };
 
@@ -72,6 +76,45 @@ class Configure extends React.Component {
                 loading: false,
             });
         });
+    }
+
+    async getPlayers = () => {
+        try {
+            this.setState({playersLoading: true});
+
+            const fakeServer = {
+                logger: () => {}
+            };
+
+            const database = new Database(fakeServer);
+            await database.load();
+
+            database.models.players
+                .fetch()
+                .then((model) => {
+                    if (!model) {
+                        return;
+                    }
+
+                    const players = model.map((player) => {
+                        return {
+                            text: player.player_name,
+                            value: player.player_bisid,
+                        }
+                    });
+
+                    this.setState({
+                        playersLoading: true,
+                        players,
+                    });
+                })
+                .catch((err) => {
+                    console.log(err);
+                    this.setState({playersLoading: true});
+                });
+        } catch (err) {
+            console.log(err);
+        }
     }
 
     getRoles = () => {
@@ -160,7 +203,10 @@ class Configure extends React.Component {
             databasePassword,
             permissions,
             roles,
+            players,
+            ignore,
             discordLoading,
+            playersLoading,
         } = this.state;
 
         const requireDBDetails = (databaseType !== '' && databaseType !== 'sqlite3');
@@ -276,6 +322,29 @@ class Configure extends React.Component {
                                         discordServerID !== '' &&
                                         <Button color="blue" disabled={discordLoading} onClick={this.getRoles}>{discordLoading ? 'Fetching..' : 'Fetch Discord Roles'}</Button>
                                     }
+                                </Form.Field>
+                            </Form.Field>
+                        </Form.Group>
+                    </Segment>
+
+                    <Divider horizontal>Access Roles</Divider>
+
+                    <Segment>
+                        <Form.Group widths='equal'>
+                            <Form.Field>
+                                <label>BIS ID's to ignore from !top lists</label>
+                                <Select
+                                    multi
+                                    options={players}
+                                    value={ignore}
+                                    onChange={(e, {value}) => this.setState({ignore: value})}
+                                />
+                                <p><small>Select the admin/mod role who should have access to use the !logs command.</small></p>
+                            </Form.Field>
+                            <Form.Field>
+                                <Form.Field>
+                                    <label>Fetch the latest list of players</label>
+                                    <Button color="blue" disabled={playersLoading} onClick={this.getPlayers}>{playersLoading ? 'Fetching..' : 'Fetch Player List'}</Button>
                                 </Form.Field>
                             </Form.Field>
                         </Form.Group>

@@ -12,6 +12,16 @@ class Queries {
         this.server = server;
     }
 
+    getIgnoreList(table) {
+        const player_list = this.sever.config.ignore;
+
+        if (!player_list || !Array.isArray(player_list)) {
+            return '';
+        }
+
+        return `AND ${table ? table + '.' : ''}player_bisid NOT IN (${player_list.join(',')})`
+    }
+
     async queryMostUsedWeapons(limit = 10, filter_bisid = null) {
         let filter = 'attacker_bisid != \'\'';
 
@@ -43,6 +53,8 @@ class Queries {
             filter = `AND killed.player_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
+        const ignore = this.getIgnoreList('players');
+
         return this.server.database.connection
             .raw(`SELECT
                         players.player_name,
@@ -55,6 +67,7 @@ class Queries {
                     WHERE
                         killed.attacker_npc = 'suicide'
                         ${filter}
+                        ${ignore}
                     GROUP BY
                         killed.player_bisid
                     ORDER BY
@@ -69,6 +82,8 @@ class Queries {
             filter = `damage.attacker_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
+        const ignore = this.getIgnoreList('players');
+
         return this.server.database.connection
             .raw(`SELECT
                         player_name,
@@ -80,6 +95,7 @@ class Queries {
                         ON players.player_bisid = damage.attacker_bisid
                     WHERE
                         ${filter}
+                        ${ignore}
                     AND
                         damage.body_part = 'Head'
                     GROUP BY
@@ -96,6 +112,8 @@ class Queries {
             filter = `killed.attacker_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
+        const ignore = this.getIgnoreList('players');
+
         return this.server.database.connection
             .raw(`SELECT
                         player_name,
@@ -107,6 +125,7 @@ class Queries {
                         ON players.player_bisid = killed.attacker_bisid
                     WHERE
                         ${filter}
+                        ${ignore}
                     GROUP BY
                         killed.attacker_bisid
                     ORDER BY
@@ -121,6 +140,8 @@ class Queries {
             filter = `killed.player_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
+        const ignore = this.getIgnoreList('players');
+
         return this.server.database.connection
             .raw(`SELECT
                         player_name,
@@ -132,6 +153,7 @@ class Queries {
                         ON players.player_bisid = killed.player_bisid
                     WHERE
                         ${filter}
+                        ${ignore}
                     GROUP BY
                         killed.player_bisid
                     ORDER BY
@@ -146,6 +168,8 @@ class Queries {
             filter = `damage.attacker_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
+        const ignore = this.getIgnoreList('players');
+
         return this.server.database.connection
             .raw(`SELECT
                         player_name,
@@ -157,6 +181,7 @@ class Queries {
                         ON players.player_bisid = damage.player_bisid
                     WHERE
                         ${filter}
+                        ${ignore}
                     GROUP BY
                         damage.player_bisid
                     ORDER BY
@@ -171,6 +196,8 @@ class Queries {
             filter = `damage.attacker_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
+        const ignore = this.getIgnoreList('players');
+
         return this.server.database.connection
             .raw(`SELECT
                         player_name,
@@ -182,6 +209,7 @@ class Queries {
                         ON players.player_bisid = damage.attacker_bisid
                     WHERE
                         ${filter}
+                        ${ignore}
                     GROUP BY
                         damage.attacker_bisid
                     ORDER BY
@@ -196,6 +224,8 @@ class Queries {
             filter = `killed.attacker_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
+        const ignore = this.getIgnoreList('players');
+
         return this.server.database.connection
             .raw(`SELECT
                         player_name,
@@ -207,6 +237,7 @@ class Queries {
                         ON players.player_bisid = killed.attacker_bisid
                     WHERE
                         ${filter}
+                        ${ignore}
                     GROUP BY
                         killed.attacker_bisid
                     ORDER BY
@@ -221,6 +252,8 @@ class Queries {
             filter = `damage.attacker_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
+        const ignore = this.getIgnoreList('players');
+
         return this.server.database.connection
             .raw(`SELECT
                         player_name,
@@ -232,6 +265,7 @@ class Queries {
                         ON players.player_bisid = damage.attacker_bisid
                     WHERE
                         ${filter}
+                        ${ignore}
                     GROUP BY
                         damage.attacker_bisid
                     ORDER BY
