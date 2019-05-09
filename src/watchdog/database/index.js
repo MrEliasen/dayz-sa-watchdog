@@ -55,7 +55,6 @@ class Database {
 
             this.server.logger(this.name, 'Connecting to database..');
             await this.connect();
-            await this.import();
             this.createModels();
         } catch (err) {
             this.server.logger(this.name, err);
@@ -114,20 +113,6 @@ class Database {
         this.connection = knex(options);
         this.db = bookshelf(this.connection);
         return this.connection;
-    }
-
-    async import() {
-        if (this.server.config.databaseType === 'sqlite3') {
-            return;
-        }
-
-        try {
-            this.server.logger(this.name, 'Importing tables (if required)..');
-            const sql = fs.readFileSync(__dirname + '/tables.sql').toString();
-            //await this.connection.raw(sql.toString());
-        } catch (err) {
-            this.server.logger(this.name, err);
-        }
     }
 
     createModels() {
