@@ -59,6 +59,7 @@ class Configure extends React.Component {
         players: [],
         ignore: [],
         discordLoading: false,
+        discordError: '',
         playersLoading: false,
         playersError: '',
         loading: true,
@@ -143,7 +144,7 @@ class Configure extends React.Component {
                 return;
             }
 
-            this.setState({discordLoading: true});
+            this.setState({discordLoading: true, discordError: ''});
 
             // Create the bot
             this.client = new Discord.Client();
@@ -170,6 +171,19 @@ class Configure extends React.Component {
                 });
 
                 this.client.destroy();
+            });
+
+            this.client.on('error', (err) => {
+                console.log(err);
+                this.setState({discordLoading: false});
+            });
+
+            this.client.on('disconnect', (err) => {
+                console.log(err);
+                this.setState({
+                    discordLoading: false,
+                    discordError: err.code !== 1000 ? err.reason : '',
+                });
             });
 
             this.client.login(discordToken);
@@ -224,6 +238,7 @@ class Configure extends React.Component {
             players,
             ignore,
             discordLoading,
+            discordError,
             playersLoading,
             playersError,
         } = this.state;
@@ -340,6 +355,10 @@ class Configure extends React.Component {
                                         discordToken !== '' &&
                                         discordServerID !== '' &&
                                         <Button color="blue" disabled={discordLoading} onClick={this.getRoles}>{discordLoading ? 'Fetching..' : 'Fetch Discord Roles'}</Button>
+                                    }
+                                    {
+                                        discordError !== '' &&
+                                        <p>{discordError}</p>
                                     }
                                 </Form.Field>
                             </Form.Field>
