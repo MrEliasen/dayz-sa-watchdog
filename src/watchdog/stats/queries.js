@@ -22,7 +22,7 @@ class Queries {
         return `AND ${table ? table + '.' : ''}player_bisid NOT IN (${player_list.join(',')})`
     }
 
-    async queryMostUsedWeapons(limit = 10, filter_bisid = null) {
+    queryMostUsedWeapons = async (limit = 10, filter_bisid = null) => {
         let filter = 'attacker_bisid != \'\'';
 
         if (filter_bisid) {
@@ -46,7 +46,7 @@ class Queries {
                     LIMIT ${limit}`);
     }
 
-    async queryMostSuicides(limit = 10, filter_bisid = null) {
+    queryMostSuicides = async (limit = 10, filter_bisid = null) => {
         let filter = '';
 
         if (filter_bisid) {
@@ -75,7 +75,7 @@ class Queries {
                     LIMIT ${limit}`);
     }
 
-    async queryMostHeadShots(limit = 10, filter_bisid = null) {
+    queryMostHeadShots = async (limit = 10, filter_bisid = null) => {
         let filter = 'damage.attacker_bisid != \'\'';
 
         if (filter_bisid) {
@@ -105,7 +105,7 @@ class Queries {
                     LIMIT ${limit}`);
     }
 
-    async queryMostKills(limit = 10, filter_bisid = null) {
+    queryMostKills = async (limit = 10, filter_bisid = null) => {
         let filter = 'killed.attacker_bisid != \'\'';
 
         if (filter_bisid) {
@@ -133,7 +133,7 @@ class Queries {
                     LIMIT ${limit}`);
     }
 
-    async queryMostDeaths(limit = 10, filter_bisid = null) {
+    queryMostDeaths = async (limit = 10, filter_bisid = null) => {
         let filter = 'killed.player_bisid != \'\'';
 
         if (filter_bisid) {
@@ -161,7 +161,7 @@ class Queries {
                     LIMIT ${limit}`);
     }
 
-    async queryMostDamageTaken(limit = 10, filter_bisid = null) {
+    queryMostDamageTaken = async (limit = 10, filter_bisid = null) =>{
         let filter = 'damage.attacker_bisid != \'\'';
 
         if (filter_bisid) {
@@ -189,7 +189,7 @@ class Queries {
                     LIMIT ${limit}`);
     }
 
-    async queryMostDamageGiven(limit = 10, filter_bisid = null) {
+    queryMostDamageGiven = async (limit = 10, filter_bisid = null) => {
         let filter = 'damage.attacker_bisid != \'\'';
 
         if (filter_bisid) {
@@ -217,7 +217,7 @@ class Queries {
                     LIMIT ${limit}`);
     }
 
-    async queryMostKillsDistance(limit = 10, filter_bisid = null) {
+    queryMostKillsDistance = async (limit = 10, filter_bisid = null) => {
         let filter = 'killed.attacker_bisid != \'\'';
 
         if (filter_bisid) {
@@ -246,7 +246,7 @@ class Queries {
                     LIMIT ${limit}`);
     }
 
-    async queryMostDamageDistance(limit = 10, filter_bisid = null) {
+    queryMostDamageDistance = async (limit = 10, filter_bisid = null) => {
         let filter = 'damage.attacker_bisid != \'\'';
 
         if (filter_bisid) {

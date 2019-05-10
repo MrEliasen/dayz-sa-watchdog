@@ -144,7 +144,7 @@ class Stats {
         }
     }
 
-    async top10MostUsedWeapons(message) {
+    top10MostUsedWeapons = async (message) => {
         try {
             let models = await this.queries.queryMostUsedWeapons(10);
             let maxDamage;
@@ -164,11 +164,12 @@ class Stats {
                 })
             ));
         } catch (err) {
+            console.log(err);
             this.server.logger(this.name, err);
         }
     }
 
-    async top10Suicides(message) {
+    top10Suicides = async (message) => {
         try {
             let models = await this.queries.queryMostSuicides(10);
             let maxDeaths;
@@ -188,11 +189,12 @@ class Stats {
                 })
             ));
         } catch (err) {
+            console.log(err);
             this.server.logger(this.name, err);
         }
     }
 
-    async top10MostHeadshots(message) {
+    top10MostHeadshots = async (message) => {
         try {
             let models = await this.queries.queryMostHeadShots(10);
             let maxHits;
@@ -212,11 +214,12 @@ class Stats {
                 })
             ));
         } catch (err) {
+            console.log(err);
             this.server.logger(this.name, err);
         }
     }
 
-    async top10KillsPvP(message) {
+    top10KillsPvP = async (message) => {
         try {
             let models = await this.queries.queryMostKills(10);
             let maxKills;
@@ -236,11 +239,12 @@ class Stats {
                 })
             ));
         } catch (err) {
+            console.log(err);
             this.server.logger(this.name, err);
         }
     }
 
-    async top10DamageTakenPvP(message) {
+    top10DamageTakenPvP = async (message) => {
         try {
             let models = await this.queries.queryMostDamageTaken(10);
             let maxDamage;
@@ -260,11 +264,12 @@ class Stats {
                 })
             ));
         } catch (err) {
+            console.log(err);
             this.server.logger(this.name, err);
         }
     }
 
-    async top10DamagePvP(message) {
+    top10DamagePvP = async (message) =>{
         try {
             let models = await this.queries.queryMostDamageGiven(10);
             let maxDamage;
@@ -284,11 +289,12 @@ class Stats {
                 })
             ));
         } catch (err) {
+            console.log(err);
             this.server.logger(this.name, err);
         }
     }
 
-    async top10KillsDistance(message) {
+    top10KillsDistance = async (message) => {
         try {
             let models = await this.queries.queryMostKillsDistance(10);
             let maxDistance;
@@ -319,11 +325,12 @@ class Stats {
                 })
             ));
         } catch (err) {
+            console.log(err);
             this.server.logger(this.name, err);
         }
     }
 
-    async top10DamageDistance(message) {
+    top10DamageDistance = async (message) => {
         try {
             let models = await this.queries.queryMostDamageDistance(10);
             let maxDistance;
@@ -353,11 +360,12 @@ class Stats {
                 })
             ));
         } catch (err) {
+            console.log(err);
             this.server.logger(this.name, err);
         }
     }
 
-    async top10Deaths(message) {
+    top10Deaths = async (message) => {
         try {
             let models = await this.queries.queryMostDeaths(10);
             let maxDeaths;
@@ -377,11 +385,12 @@ class Stats {
                 })
             ));
         } catch (err) {
+            console.log(err);
             this.server.logger(this.name, err);
         }
     }
 
-    async playerStats(message) {
+    playerStats = async (message) => {
         try {
             const models = this.server.database.models;
 
