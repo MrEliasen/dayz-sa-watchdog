@@ -6,9 +6,9 @@ const templateTopList = (title, listArray) => `
 \`\`\`css
 ${title}
 
----------- [TOP 10] ----------
+--------------- [TOP 10] ---------------
 ${listArray.join("\n")}
-------------------------------
+----------------------------------------
 "-" = Player name not confirmed.
 \`\`\`
 `;
@@ -319,13 +319,7 @@ class Stats {
                 models = [];
             }
 
-            let nameLength = 0;
-
-            models.forEach((p) => {
-                if (nameLength < p.player_name.length) {
-                    nameLength = p.player_name.length;
-                }
-            });
+            const maxLength = Math.max(...models.map((p) => (p.player_name||'-').length));
 
             message.channel.send(templateTopList(
                 'Longest Kill Shot (PvP)',
@@ -337,7 +331,7 @@ class Stats {
                         maxDistance = roundedDistance.length;
                     }
 
-                    return `${roundedDistance.padStart(maxDistance, ' ')} meters | ${(p.player_name||'-').padEnd(nameLength, '')} | ${p.weapon}`;
+                    return `${roundedDistance.padStart(maxDistance, ' ')} meters | ${(p.player_name||'-').padEnd(maxLength, ' ')} | ${p.weapon}`;
                 })
             ));
         } catch (err) {
@@ -355,13 +349,7 @@ class Stats {
                 models = [];
             }
 
-            let nameLength = 0;
-
-            models.forEach((p) => {
-                if (nameLength < p.player_name.length) {
-                    nameLength = p.player_name.length;
-                }
-            });
+            const maxLength = Math.max(...models.map((p) => (p.player_name||'-').length));
 
             message.channel.send(templateTopList(
                 'Longest Damage Shot (PvP)',
@@ -372,7 +360,7 @@ class Stats {
                         maxDistance = roundedDistance.length;
                     }
 
-                    return `${roundedDistance.padStart(maxDistance, ' ')} meters | ${(p.player_name||'-').padEnd(nameLength, '')} | ${p.weapon}`;
+                    return `${roundedDistance.padStart(maxDistance, ' ')} meters | ${(p.player_name||'-').padEnd(maxLength, ' ')} | ${p.weapon}`;
                 })
             ));
         } catch (err) {
