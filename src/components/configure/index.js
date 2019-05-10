@@ -7,6 +7,12 @@ import storage from 'electron-json-storage';
 import Discord from 'discord.js';
 import Database from '../../watchdog/database';
 
+import createDOMPurify from 'dompurify';
+import {JSDOM} from 'jsdom';
+
+const window = (new JSDOM('')).window;
+const DOMPurify = createDOMPurify(window);
+
 const databaseOptions = [
     /*{
         text: '',
@@ -54,6 +60,7 @@ class Configure extends React.Component {
         ignore: [],
         discordLoading: false,
         playersLoading: false,
+        playersError: '',
         loading: true,
     };
 
@@ -99,6 +106,10 @@ class Configure extends React.Component {
                             player_bisid
                         FROM
                             players
+                        WHERE
+                            player_name NOT LIKE "Survivor"
+                        AND
+                            player_name NOT LIKE "Survivor (%"
                         GROUP BY
                             player_bisid
                         ORDER BY
@@ -110,18 +121,17 @@ class Configure extends React.Component {
 
             const playerList = players.map((player) => {
                 return {
-                    text: player.player_name,
+                    text: DOMPurify.sanitize(player.player_name),
                     value: player.player_bisid,
                 };
             });
 
             this.setState({
                 playersLoading: false,
-                players,
+                players: playerList,
             });
         } catch (err) {
-            this.setState({playersLoading: false});
-            console.log(err);
+            this.setState({playersLoading: false, playersError: err.message});
         }
     }
 
@@ -215,6 +225,7 @@ class Configure extends React.Component {
             ignore,
             discordLoading,
             playersLoading,
+            playersError,
         } = this.state;
 
         const requireDBDetails = (databaseType !== '' && databaseType !== 'sqlite3');
@@ -353,6 +364,10 @@ class Configure extends React.Component {
                                 <Form.Field>
                                     <label>Fetch the latest list of players</label>
                                     <Button color="blue" disabled={playersLoading} onClick={this.getPlayers}>{playersLoading ? 'Fetching..' : 'Fetch Player List'}</Button>
+                                    {
+                                        playersError !== '' &&
+                                        <p>{playersError}</p>
+                                    }
                                 </Form.Field>
                             </Form.Field>
                         </Form.Group>

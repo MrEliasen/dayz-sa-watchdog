@@ -12,14 +12,14 @@ class Queries {
         this.server = server;
     }
 
-    getIgnoreList(table) {
-        const player_list = this.sever.config.ignore;
+    getIgnoreList = (table) => {
+        const player_list = this.server.config.ignore;
 
         if (!player_list || !Array.isArray(player_list)) {
             return '';
         }
 
-        return `AND ${table ? table + '.' : ''}player_bisid NOT IN (${player_list.join(',')})`
+        return `AND ${table ? table + '.' : ''}player_bisid NOT IN ('${player_list.join('\',\'')}')`;
     }
 
     queryMostUsedWeapons = async (limit = 10, filter_bisid = null) => {
