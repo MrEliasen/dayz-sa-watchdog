@@ -12,8 +12,12 @@ class Queries {
         this.server = server;
     }
 
-    getIgnoreList = (table) => {
+    getIgnoreList = (table, isPersonalStats = false) => {
         const player_list = this.server.config.ignore;
+
+        if (isPersonalStats) {
+            return '';
+        }
 
         if (!player_list || !Array.isArray(player_list)) {
             return '';
@@ -53,7 +57,7 @@ class Queries {
             filter = `AND killed.player_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
-        const ignore = this.getIgnoreList('players');
+        const ignore = this.getIgnoreList('players', filter_bisid ? true : false);
 
         return this.server.database.connection
             .raw(`SELECT
@@ -82,7 +86,7 @@ class Queries {
             filter = `damage.attacker_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
-        const ignore = this.getIgnoreList('players');
+        const ignore = this.getIgnoreList('players', filter_bisid ? true : false);
 
         return this.server.database.connection
             .raw(`SELECT
@@ -112,7 +116,7 @@ class Queries {
             filter = `killed.attacker_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
-        const ignore = this.getIgnoreList('players');
+        const ignore = this.getIgnoreList('players', filter_bisid ? true : false);
 
         return this.server.database.connection
             .raw(`SELECT
@@ -140,7 +144,7 @@ class Queries {
             filter = `killed.player_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
-        const ignore = this.getIgnoreList('players');
+        const ignore = this.getIgnoreList('players', filter_bisid ? true : false);
 
         return this.server.database.connection
             .raw(`SELECT
@@ -168,7 +172,7 @@ class Queries {
             filter = `damage.attacker_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
-        const ignore = this.getIgnoreList('players');
+        const ignore = this.getIgnoreList('players', filter_bisid ? true : false);
 
         return this.server.database.connection
             .raw(`SELECT
@@ -196,7 +200,7 @@ class Queries {
             filter = `damage.attacker_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
-        const ignore = this.getIgnoreList('players');
+        const ignore = this.getIgnoreList('players', filter_bisid ? true : false);
 
         return this.server.database.connection
             .raw(`SELECT
@@ -224,7 +228,7 @@ class Queries {
             filter = `killed.attacker_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
-        const ignore = this.getIgnoreList('players');
+        const ignore = this.getIgnoreList('players', filter_bisid ? true : false);
 
         return this.server.database.connection
             .raw(`SELECT
@@ -253,7 +257,7 @@ class Queries {
             filter = `damage.attacker_bisid = ${Sqlstring.escape(filter_bisid)}`;
         }
 
-        const ignore = this.getIgnoreList('players');
+        const ignore = this.getIgnoreList('players', filter_bisid ? true : false);
 
         return this.server.database.connection
             .raw(`SELECT
