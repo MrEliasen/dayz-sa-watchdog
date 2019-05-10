@@ -53,9 +53,9 @@ class DiscordBot {
                 resolve();
             });
 
-            this.client.on('disconnect', () => {
+            this.client.on('disconnect', (err) => {
                 this.connected = false;
-                this.server.logger(this.name, 'Disconnected from server.');
+                this.server.logger(this.name, err.code === 1000 ? 'Disconnected from server.' : err.reason);
             });
 
             this.client.on('message', (message) => {
