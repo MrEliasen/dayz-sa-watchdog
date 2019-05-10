@@ -36,6 +36,16 @@ ${listArray.join("\n")}
 \`\`\`
 `;
 
+const templateServerStats = (title, listArray) => `
+\`\`\`css
+${title}
+
+-------------------- [Stats] --------------------
+${listArray.join("\n")}
+-------------------------------------------------
+\`\`\`
+`;
+
 /**
  * Stats manager
  */
@@ -108,6 +118,10 @@ class Stats {
                 cmd: '!stats',
                 desc: 'See your DayZ account stats.',
             },
+            {
+                cmd: '!server',
+                desc: 'See the first place of all server top lists.',
+            },
         ];
         message.channel.send(templateCommandList(
             generalCommands.map((cmd) => `${cmd.cmd.padEnd(20, ' ')} | ${cmd.desc}`),
@@ -121,6 +135,8 @@ class Stats {
                 return this.commandList(message);
             case '!stats':
                 return this.playerStats(message);
+            case '!server':
+                return this.serverStats(message);
             case '!top suicides':
                 return this.top10Suicides(message);
 
@@ -435,6 +451,51 @@ class Stats {
             }
 
             message.channel.send(`<@${message.author.id}>${templateStats(title, stats)}`);
+        } catch (err) {
+            console.log(err);
+            this.server.logger(this.name, err);
+        }
+    }
+
+    serverStats = async (message) => {
+        try {
+            const weaponModel = await this.queries.queryMostUsedWeapons(1);
+            const suicideModel = await this.queries.queryMostSuicides(1);
+            const headshotModel = await this.queries.queryMostHeadShots(1);
+            const killsModel = await this.queries.queryMostKills(1);
+            const damageModel = await this.queries.queryMostDamageTaken(1);
+            const damgeGivenModel = await this.queries.queryMostDamageGiven(1);
+            const killDistanceModel = await this.queries.queryMostKillsDistance(1);
+            const damageDistanceModel = await this.queries.queryMostDamageDistance(1);
+            const deathModel = await this.queries.queryMostDeaths(1);
+
+            const maxLength = Math.max(...[
+                killsModel.length ? (killsModel[0].kills + '').length : 0,
+                deathModel.length ? (deathModel[0].deaths + '').length : 0,
+                headshotModel.length ? (headshotModel[0].hits + '').length : 0,
+                killDistanceModel.length ? (round2Decimal(killDistanceModel[0].distance) + '').length : 0,
+                damageDistanceModel.length ? (round2Decimal(damageDistanceModel[0].distance) + '').length : 0,
+                damageModel.length ? (damageModel[0].totalDamage + '').length : 0,
+                damgeGivenModel.length ? (damgeGivenModel[0].totalDamage + '').length : 0,
+                weaponModel.length ? (weaponModel[0].weapon + '').length : 0,
+                suicideModel.length ? (suicideModel[0].deaths + '').length : 0,
+            ]);
+
+            const stats = [
+                `[Kills]:               | ${((killsModel.length ? killsModel[0].kills : 0) + '').padEnd(maxLength, ' ')} | ${killsModel[0].player_name}`,
+                `[Deaths]:              | ${((deathModel.length ? deathModel[0].deaths : 0) + '').padEnd(maxLength, ' ')} | ${deathModel[0].player_name}`,
+                `[Headshots]:           | ${((headshotModel.length ? headshotModel[0].hits : 0) + '').padEnd(maxLength, ' ')} | ${headshotModel[0].player_name}`,
+                `[Longest kill shot]:   | ${((killDistanceModel.length ? round2Decimal(killDistanceModel[0].distance) : 0) + '').padEnd(maxLength, ' ')} | ${killDistanceModel[0].player_name}`,
+                `[Longest damage shot]: | ${((damageDistanceModel.length ? round2Decimal(damageDistanceModel[0].distance) : 0) + '').padEnd(maxLength, ' ')} | ${damageDistanceModel[0].player_name}`,
+                `[Damage Taken]:        | ${((damageModel.length ? damageModel[0].totalDamage : 0) + '').padEnd(maxLength, ' ')} | ${damageModel[0].player_name}`,
+                `[Damage Dealt]:        | ${((damgeGivenModel.length ? damgeGivenModel[0].totalDamage : 0) + '').padEnd(maxLength, ' ')} | ${damgeGivenModel[0].player_name}`,
+                `[Suicides]:            | ${((suicideModel.length ? suicideModel[0].deaths : 0) + '').padEnd(maxLength, ' ')} | ${suicideModel[0].player_name}`,
+                `[Most Used Weapon]:    | ${((weaponModel.length ? weaponModel[0].weapon : '-') + '').padEnd(maxLength, ' ')}`,
+            ];
+
+            const title = 'DayZ SA Watchdog - Server Top List';
+
+            message.channel.send(`<@${message.author.id}>${templateServerStats(title, stats)}`);
         } catch (err) {
             console.log(err);
             this.server.logger(this.name, err);
