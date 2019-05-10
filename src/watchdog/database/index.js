@@ -77,38 +77,18 @@ class Database {
             acquireConnectionTimeout: 5000,
         };
 
-        if (databaseType !== 'sqlite3') {
-            options.connection = {
-                host: databaseHost,
-                user: databaseUser,
-                password: databasePassword,
-                database: databaseName,
-                multipleStatements: true,
-            };
+        const sqliteDbDist = remote.app.getPath('userData') + '/database.sqlite';
+        const exits = fs.existsSync(sqliteDbDist);
 
-            options.pool = {
-                min: 2,
-                max: 6,
-                propagateCreateError: false,
-            };
-
-            if (databasePort && databasePort !== '') {
-                options.connection.port = databasePort;
-            }
-        } else {
-            const sqliteDbDist = remote.app.getPath('userData') + '/database.sqlite';
-            const exits = fs.existsSync(sqliteDbDist);
-
-            if (!exits) {
-                // make sure the database file exists, otherwise, create it
-                fs.copyFileSync(__dirname + '/database.sqlite', sqliteDbDist);
-            }
-
-            options.connection = {
-                filename: sqliteDbDist,
-            };
-            options.useNullAsDefault = true;
+        if (!exits) {
+            // make sure the database file exists, otherwise, create it
+            fs.copyFileSync(__dirname + '/database.sqlite', sqliteDbDist);
         }
+
+        options.connection = {
+            filename: sqliteDbDist,
+        };
+        options.useNullAsDefault = true;
 
         this.connection = knex(options);
         this.db = bookshelf(this.connection);
