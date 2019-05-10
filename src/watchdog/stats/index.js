@@ -30,9 +30,9 @@ const templateStats = (title, listArray) => `
 \`\`\`css
 ${title}
 
----------- [Stats] ----------
+----------- [Stats] -----------
 ${listArray.join("\n")}
-------------------------------
+-------------------------------
 \`\`\`
 `;
 
@@ -64,10 +64,6 @@ class Stats {
             {
                 cmd: '!status',
                 desc: 'See the linking status of your account. Whether enabled or not.',
-            },
-            {
-                cmd: '!stats',
-                desc: 'See your DayZ account stats.',
             },
         ];
 
@@ -107,6 +103,10 @@ class Stats {
             {
                 cmd: '!top deaths',
                 desc: 'Show the top 10 list of players with most deaths.',
+            },
+            {
+                cmd: '!stats',
+                desc: 'See your DayZ account stats.',
             },
         ];
         message.channel.send(templateCommandList(
