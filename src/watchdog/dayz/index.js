@@ -14,7 +14,7 @@ const DOMPurify = createDOMPurify(window);
 const TEST_LINK_TOKEN = /^link ([a-z0-9]+)$/i;
 const TEST_CONNECTED = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" is connected \(id=(.+)\)/i;
 const TEST_DISCONNECTED = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+"\(id=(.+)\) has been disconnected/i;
-const TEST_GLOBAL_CHAT = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| \[.+\] \[Chat\] (.+)\(steamid=(.+), bisid=(.+)\) (.+)/i;
+const TEST_GLOBAL_CHAT = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| \[.+\] \[Chat\] (.+)\(steamid=(.+), bisid=([\w\+\=\/]{44})\) (.+)/i;
 const TEST_DIRECT_CHAT = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| (?:Chat\("(.+)"\(id=(.+)\)\):) (.+)/i;
 const TEST_DAMAGE_NPC = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" \(id=(.+) pos\=\<(.+)\>\)\[HP: ([0-9\.]+)\] hit by ((?!player).+) (?:into (.+)\([0-9]+\)) for ([0-9.]+) damage \((.+)\)/i;
 const TEST_DAMAGE_PLAYER = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+"(?: \(dead\))? \(id=(.+) pos=\<(.+)\>\)\[HP: (.+)\] hit by Player ".+" \(id=(.+) pos=\<(.+)\>\) (?:into )?(.+)\([0-9]+\) for (.+) damage(?: \((MeleeFist)\)|(?: \(.+\))? with (.+(?=from (.+) meters)|.+))/i;
