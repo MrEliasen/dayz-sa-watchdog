@@ -48,7 +48,7 @@ class Configure extends React.Component {
         databaseName: '',
         databaseUser: '',
         databasePassword: '',
-        permissions: [],
+        permissions: '',
         roles: [],
         players: [],
         ignore: [],
@@ -78,12 +78,12 @@ class Configure extends React.Component {
         });
     }
 
-    async getPlayers = () => {
+    getPlayers = async () => {
         try {
             this.setState({playersLoading: true});
 
             const fakeServer = {
-                logger: () => {}
+                logger: () => {},
             };
 
             const database = new Database(fakeServer);
@@ -100,7 +100,7 @@ class Configure extends React.Component {
                         return {
                             text: player.player_name,
                             value: player.player_bisid,
-                        }
+                        };
                     });
 
                     this.setState({
@@ -334,7 +334,7 @@ class Configure extends React.Component {
                             <Form.Field>
                                 <label>BIS ID's to ignore from !top lists</label>
                                 <Select
-                                    multi
+                                    multiple={true}
                                     options={players}
                                     value={ignore}
                                     onChange={(e, {value}) => this.setState({ignore: value})}
