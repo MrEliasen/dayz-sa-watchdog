@@ -229,7 +229,8 @@ class Queries {
         return this.server.database.connection
             .raw(`SELECT
                         player_name,
-                        distance
+                        distance,
+                        weapon
                     FROM
                         killed
                     LEFT JOIN
@@ -257,7 +258,8 @@ class Queries {
         return this.server.database.connection
             .raw(`SELECT
                         player_name,
-                        distance
+                        distance,
+                        weapon
                     FROM
                         damage
                     LEFT JOIN

@@ -297,16 +297,25 @@ class Stats {
                 models = [];
             }
 
+            let nameLength = 0;
+
+            models.forEach((p) => {
+                if (nameLength < p.player_name.length) {
+                    nameLength = p.player_name.length;
+                }
+            });
+
             message.channel.send(templateTopList(
                 'Longest Kill Shot (PvP)',
                 models.map((p, index) => {
+                    const weapon = p.weapon;
                     const roundedDistance = round2Decimal(parseInt(p.distance, 10)).toString();
 
                     if (index === 0) {
                         maxDistance = roundedDistance.length;
                     }
 
-                    return `${roundedDistance.padStart(maxDistance, ' ')} meters | ${p.player_name||'-'}`;
+                    return `${roundedDistance.padStart(maxDistance, ' ')} meters | ${(p.player_name||'-').padEnd(nameLength, '')} | ${p.weapon}`;
                 })
             ));
         } catch (err) {
@@ -323,6 +332,14 @@ class Stats {
                 models = [];
             }
 
+            let nameLength = 0;
+
+            models.forEach((p) => {
+                if (nameLength < p.player_name.length) {
+                    nameLength = p.player_name.length;
+                }
+            });
+
             message.channel.send(templateTopList(
                 'Longest Damage Shot (PvP)',
                 models.map((p, index) => {
@@ -332,7 +349,7 @@ class Stats {
                         maxDistance = roundedDistance.length;
                     }
 
-                    return `${roundedDistance.padStart(maxDistance, ' ')} meters | ${p.player_name||'-'}`;
+                    return `${roundedDistance.padStart(maxDistance, ' ')} meters | ${(p.player_name||'-').padEnd(nameLength, '')} | ${p.weapon}`;
                 })
             ));
         } catch (err) {
