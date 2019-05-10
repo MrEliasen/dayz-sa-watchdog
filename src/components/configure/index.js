@@ -80,39 +80,47 @@ class Configure extends React.Component {
 
     getPlayers = async () => {
         try {
+            const {state} = this;
             this.setState({playersLoading: true});
 
             const fakeServer = {
-                logger: () => {},
+                config: state,
+                logger: (...args) => {
+                    console.log(args);
+                },
             };
 
             const database = new Database(fakeServer);
             await database.load();
 
-            database.models.players
-                .fetch()
-                .then((model) => {
-                    if (!model) {
-                        return;
-                    }
+            const players = await database.connection
+                .raw(`SELECT
+                            player_name,
+                            player_bisid
+                        FROM
+                            players
+                        GROUP BY
+                            player_bisid
+                        ORDER BY
+                            player_name ASC`);
 
-                    const players = model.map((player) => {
-                        return {
-                            text: player.player_name,
-                            value: player.player_bisid,
-                        };
-                    });
+            if (!players) {
+                return;
+            }
 
-                    this.setState({
-                        playersLoading: true,
-                        players,
-                    });
-                })
-                .catch((err) => {
-                    console.log(err);
-                    this.setState({playersLoading: true});
-                });
+            const playerList = players.map((player) => {
+                return {
+                    text: player.player_name,
+                    value: player.player_bisid,
+                };
+            });
+
+            this.setState({
+                playersLoading: false,
+                players,
+            });
         } catch (err) {
+            this.setState({playersLoading: false});
             console.log(err);
         }
     }
