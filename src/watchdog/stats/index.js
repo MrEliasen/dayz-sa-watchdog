@@ -90,10 +90,10 @@ class Stats {
                 cmd: '!top kill distance',
                 desc: 'Show the top 10 list of players with longest player kill-shot.',
             },
-            {
+            /*{
                 cmd: '!top damage distance',
                 desc: 'Show the top 10 list of players with longest player damage-shot.',
-            },
+            },*/
             {
                 cmd: '!top suicides',
                 desc: 'Show the top 10 list of players who killed themselves most times.',
@@ -147,8 +147,8 @@ class Stats {
                 return this.top10DamagePvP(message);
             case '!top kill distance':
                 return this.top10KillsDistance(message);
-            case '!top damage distance':
-                return this.top10DamageDistance(message);
+            //case '!top damage distance':
+                //return this.top10DamageDistance(message);
             case '!top spunge':
                 return this.top10DamageTakenPvP(message);
             case '!top weapons':
@@ -416,7 +416,7 @@ class Stats {
             const damageModel = await this.queries.queryMostDamageTaken(1, bisid);
             const damgeGivenModel = await this.queries.queryMostDamageGiven(1, bisid);
             const killDistanceModel = await this.queries.queryMostKillsDistance(1, bisid);
-            const damageDistanceModel = await this.queries.queryMostDamageDistance(1, bisid);
+            //const damageDistanceModel = await this.queries.queryMostDamageDistance(1, bisid);
             const deathModel = await this.queries.queryMostDeaths(1, bisid);
 
             const stats = [
@@ -424,7 +424,7 @@ class Stats {
                 `[Deaths]:              ${deathModel.length ? deathModel[0].deaths : 0}`,
                 `[Headshots]:           ${headshotModel.length ? headshotModel[0].hits : 0}`,
                 `[Longest kill shot]:   ${killDistanceModel.length ? round2Decimal(killDistanceModel[0].distance) : 0}`,
-                `[Longest damage shot]: ${damageDistanceModel.length ? round2Decimal(damageDistanceModel[0].distance) : 0}`,
+                //`[Longest damage shot]: ${damageDistanceModel.length ? round2Decimal(damageDistanceModel[0].distance) : 0}`,
                 `[Damage Taken]:        ${damageModel.length ? damageModel[0].totalDamage : 0}`,
                 `[Damage Dealt]:        ${damgeGivenModel.length ? damgeGivenModel[0].totalDamage : 0}`,
                 `[Most Used Weapon]:    ${weaponModel.length ? weaponModel[0].weapon : '-'}`,
@@ -454,7 +454,7 @@ class Stats {
             const damageModel = await this.queries.queryMostDamageTaken(1);
             const damgeGivenModel = await this.queries.queryMostDamageGiven(1);
             const killDistanceModel = await this.queries.queryMostKillsDistance(1);
-            const damageDistanceModel = await this.queries.queryMostDamageDistance(1);
+            //const damageDistanceModel = await this.queries.queryMostDamageDistance(1);
             const deathModel = await this.queries.queryMostDeaths(1);
 
             const maxLength = Math.max(...[
@@ -462,7 +462,7 @@ class Stats {
                 deathModel.length ? (deathModel[0].deaths + '').length : 0,
                 headshotModel.length ? (headshotModel[0].hits + '').length : 0,
                 killDistanceModel.length ? (round2Decimal(killDistanceModel[0].distance) + '').length : 0,
-                damageDistanceModel.length ? (round2Decimal(damageDistanceModel[0].distance) + '').length : 0,
+                //damageDistanceModel.length ? (round2Decimal(damageDistanceModel[0].distance) + '').length : 0,
                 damageModel.length ? (damageModel[0].totalDamage + '').length : 0,
                 damgeGivenModel.length ? (damgeGivenModel[0].totalDamage + '').length : 0,
                 weaponModel.length ? (weaponModel[0].weapon + '').length : 0,
@@ -474,7 +474,7 @@ class Stats {
                 `[Deaths]:              | ${((deathModel.length ? deathModel[0].deaths : 0) + '').padEnd(maxLength, ' ')} | ${deathModel[0].player_name}`,
                 `[Headshots]:           | ${((headshotModel.length ? headshotModel[0].hits : 0) + '').padEnd(maxLength, ' ')} | ${headshotModel[0].player_name}`,
                 `[Longest kill shot]:   | ${((killDistanceModel.length ? round2Decimal(killDistanceModel[0].distance) : 0) + '').padEnd(maxLength, ' ')} | ${killDistanceModel[0].player_name}`,
-                `[Longest damage shot]: | ${((damageDistanceModel.length ? round2Decimal(damageDistanceModel[0].distance) : 0) + '').padEnd(maxLength, ' ')} | ${damageDistanceModel[0].player_name}`,
+                //`[Longest damage shot]: | ${((damageDistanceModel.length ? round2Decimal(damageDistanceModel[0].distance) : 0) + '').padEnd(maxLength, ' ')} | ${damageDistanceModel[0].player_name}`,
                 `[Damage Taken]:        | ${((damageModel.length ? damageModel[0].totalDamage : 0) + '').padEnd(maxLength, ' ')} | ${damageModel[0].player_name}`,
                 `[Damage Dealt]:        | ${((damgeGivenModel.length ? damgeGivenModel[0].totalDamage : 0) + '').padEnd(maxLength, ' ')} | ${damgeGivenModel[0].player_name}`,
                 `[Suicides]:            | ${((suicideModel.length ? suicideModel[0].deaths : 0) + '').padEnd(maxLength, ' ')} | ${suicideModel[0].player_name}`,
