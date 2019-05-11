@@ -232,22 +232,29 @@ class Queries {
 
         return this.server.database.connection
             .raw(`SELECT
-                        player_name,
-                        distance,
-                        weapon
-                    FROM
-                        killed
-                    LEFT JOIN
-                        players
-                        ON players.player_bisid = killed.attacker_bisid
-                    WHERE
-                        ${filter}
-                        ${ignore}
-                    GROUP BY
-                        killed.attacker_bisid
-                    ORDER BY
-                        distance * 1 DESC
-                    LIMIT ${limit}`);
+                    player_name,
+                    distance,
+                    weapon
+                FROM
+                    (
+                        SELECT
+                            *
+                        FROM
+                            killed
+                        LEFT JOIN
+                            players
+                            ON players.player_bisid = killed.attacker_bisid
+                        WHERE
+                            ${filter}
+                            ${ignore}
+                        ORDER BY
+                            distance * 1 DESC
+                ) as killed
+                GROUP BY
+                    killed.attacker_bisid
+                ORDER BY
+                    distance * 1 DESC
+                LIMIT ${limit}`);
     }
 
     queryMostDamageDistance = async (limit = 10, filter_bisid = null) => {
