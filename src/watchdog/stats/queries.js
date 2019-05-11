@@ -261,22 +261,29 @@ class Queries {
 
         return this.server.database.connection
             .raw(`SELECT
-                        player_name,
-                        distance,
-                        weapon
-                    FROM
-                        damage
-                    LEFT JOIN
-                        players
-                        ON players.player_bisid = damage.attacker_bisid
-                    WHERE
-                        ${filter}
-                        ${ignore}
-                    GROUP BY
-                        damage.attacker_bisid
-                    ORDER BY
-                        distance * 1 DESC
-                    LIMIT ${limit}`);
+                    player_name,
+                    distance,
+                    weapon
+                FROM
+                    (
+                        SELECT
+                            *
+                        FROM
+                            damage
+                        WHERE
+                            ${filter}
+                            ${ignore}
+                        ORDER BY
+                            distance * 1 DESC
+                ) as damage
+                LEFT JOIN
+                    players
+                    ON players.player_bisid = damage.attacker_bisid
+                GROUP BY
+                    damage.attacker_bisid
+                ORDER BY
+                    distance * 1 DESC
+                LIMIT ${limit}`);
     }
 }
 
