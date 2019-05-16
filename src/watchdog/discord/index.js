@@ -89,7 +89,9 @@ class DiscordBot {
 
     async handleDMs(message) {
         try {
-            switch (message.content.toLowerCase()) {
+            const command = message.content.split(' ')[0];
+
+            switch (command.toLowerCase()) {
                 case '!status':
                     this.linkStatus(message);
                     return;
@@ -112,126 +114,139 @@ class DiscordBot {
     }
 
     async getLogs(message) {
-        const {permissions, logFileDirectory} = this.server.config;
-        const member = await this.guild.fetchMember(message.author);
-        const hasRole = member.roles.get(permissions);
-        const msg = message.content.split('!logs');
-        const logfile = msg[0].trim();
+        try {
+            const {permissions, logFileDirectories} = this.server.config;
+            const member = await this.guild.fetchMember(message.author);
+            const hasRole = member.roles.get(permissions);
+            const msg = message.content.split(' ');
+            let dir = logFileDirectories[0];
 
-        if (!hasRole) {
-            return;
-        }
-
-        if (logfile !== '') {
-            const file = await this.fetchLogFile(logfile);
-            return;
-        }
-
-        const indicators = [
-            {
-                string: ':zero:',
-                identifier: '0%E2%83%A3',
-            },
-            {
-                string: ':one:',
-                identifier: '1%E2%83%A3',
-            },
-            {
-                string: ':two:',
-                identifier: '2%E2%83%A3',
-            },
-            {
-                string: ':three:',
-                identifier: '3%E2%83%A3',
-            },
-            {
-                string: ':four:',
-                identifier: '4%E2%83%A3',
-            },
-            {
-                string: ':five:',
-                identifier: '5%E2%83%A3',
-            },
-            {
-                string: ':six:',
-                identifier: '6%E2%83%A3',
-            },
-            {
-                string: ':seven:',
-                identifier: '7%E2%83%A3',
-            },
-            {
-                string: ':eight:',
-                identifier: '8%E2%83%A3',
-            },
-            {
-                string: ':nine:',
-                identifier: '9%E2%83%A3',
-            },
-            {
-                string: ':keycap_ten:',
-                identifier: '%F0%9F%94%9F',
-            },
-        ];
-
-        fs.readdir(logFileDirectory, (err, files) => {
-            if (err) {
-                console.log(err);
-                this.server.logger(this.name, 'ERROR: ' + JSON.stringify(err));
+            if (!hasRole) {
                 return;
             }
 
-            const logFiles = files.filter((file) => path.extname(file) === '.ADM' && file !== 'DayZServer_x64.ADM');
-            const list = logFiles
-                .sort()
-                .reverse()
-                .slice(0, 10);
+            if (msg.length > 1) {
+                const server = parseInt(msg[1].trim(), 10);
 
-            const outputList = list.map((file, index) => {
-                const parts = file.replace('.ADM', '').split('_');
-                const stamp = {
-                    year: parts[2],
-                    month: parts[3],
-                    day: parts[4],
-                    time: {
-                        hour: `${parts[5][0]}${parts[5][1]}`,
-                        minute: `${parts[5][2]}${parts[5][3]}`,
-                        second: `${parts[5][4]}${parts[5][5]}`,
-                    },
-                };
+                if (!isNaN(server) && server >= 1 && (server - 1) < logFileDirectories.length) {
+                    dir = logFileDirectories[(server - 1)];
+                }
+            }
 
-                return `${indicators[index].string} = ${stamp.year}/${stamp.month}/${stamp.day} @ ${stamp.time.hour}:${stamp.time.minute}`;
-            });
+            const indicators = [
+                {
+                    string: ':zero:',
+                    identifier: '0%E2%83%A3',
+                },
+                {
+                    string: ':one:',
+                    identifier: '1%E2%83%A3',
+                },
+                {
+                    string: ':two:',
+                    identifier: '2%E2%83%A3',
+                },
+                {
+                    string: ':three:',
+                    identifier: '3%E2%83%A3',
+                },
+                {
+                    string: ':four:',
+                    identifier: '4%E2%83%A3',
+                },
+                {
+                    string: ':five:',
+                    identifier: '5%E2%83%A3',
+                },
+                {
+                    string: ':six:',
+                    identifier: '6%E2%83%A3',
+                },
+                {
+                    string: ':seven:',
+                    identifier: '7%E2%83%A3',
+                },
+                {
+                    string: ':eight:',
+                    identifier: '8%E2%83%A3',
+                },
+                {
+                    string: ':nine:',
+                    identifier: '9%E2%83%A3',
+                },
+                {
+                    string: ':keycap_ten:',
+                    identifier: '%F0%9F%94%9F',
+                },
+            ];
 
-            message.channel
-                .send(`Please react with the appropriate reaction to receive that log file.\nI will send you the file in **10 seconds**:\n\n${outputList.join("\n")}`)
-                .then((logsMessage) => {
-                    logsMessage.awaitReactions((reaction, user) => user.id === message.author.id, {time: 10000})
-                        .then((collected) => {
-                            const reaction = collected.first();
+            fs.readdir(dir, (err, files) => {
+                if (err) {
+                    console.log(err);
+                    this.server.logger(this.name, 'ERROR: ' + JSON.stringify(err));
+                    return;
+                }
 
-                            if (!reaction) {
-                                message.channel.send('No reaction matching any of the files above was received.');
-                                return;
-                            }
+                const logFiles = files.filter((file) => path.extname(file) === '.ADM' && file !== 'DayZServer_x64.ADM');
 
-                            const index = indicators.findIndex((i) => i.identifier === reaction.emoji.identifier);
-                            const filename = list[index];
+                if (!logFiles.length) {
+                    message.channel.send(`There are no log files for this server (${dir})`);
+                    return;
+                }
 
-                            if (!filename) {
-                                message.channel.send('No reaction matching any of the files above was received.');
-                                return;
-                            }
+                const list = logFiles
+                    .sort()
+                    .reverse()
+                    .slice(0, 10);
 
-                            ipcRenderer.send('sendFile', {
-                                filePath: `${logFileDirectory}${path.sep}${filename}`,
-                                fileName: filename,
-                                userId: message.author.id,
-                            });
-                        })
-                        .catch(console.error);
+                const outputList = list.map((file, index) => {
+                    const parts = file.replace('.ADM', '').split('_');
+                    const stamp = {
+                        year: parts[2],
+                        month: parts[3],
+                        day: parts[4],
+                        time: {
+                            hour: `${parts[5][0]}${parts[5][1]}`,
+                            minute: `${parts[5][2]}${parts[5][3]}`,
+                            second: `${parts[5][4]}${parts[5][5]}`,
+                        },
+                    };
+
+                    return `${indicators[index].string} = ${stamp.year}/${stamp.month}/${stamp.day} @ ${stamp.time.hour}:${stamp.time.minute}`;
                 });
-        });
+
+                message.channel
+                    .send(`Latest 10 log files in "${dir}"\nPlease react with the appropriate reaction to receive that log file.\nI will send you the file in **10 seconds**:\n\n${outputList.join("\n")}`)
+                    .then((logsMessage) => {
+                        logsMessage.awaitReactions((reaction, user) => user.id === message.author.id, {time: 10000})
+                            .then((collected) => {
+                                const reaction = collected.first();
+
+                                if (!reaction) {
+                                    message.channel.send('No reaction matching any of the files above was received.');
+                                    return;
+                                }
+
+                                const index = indicators.findIndex((i) => i.identifier === reaction.emoji.identifier);
+                                const filename = list[index];
+
+                                if (!filename) {
+                                    message.channel.send('No reaction matching any of the files above was received.');
+                                    return;
+                                }
+
+                                ipcRenderer.send('sendFile', {
+                                    filePath: `${dir}${path.sep}${filename}`,
+                                    fileName: filename,
+                                    userId: message.author.id,
+                                });
+                            })
+                            .catch(console.error);
+                    });
+            });
+        } catch (err) {
+            console.log(err);
+        }
     }
 
     linkStatus(message) {

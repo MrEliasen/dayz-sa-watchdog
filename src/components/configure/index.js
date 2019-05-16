@@ -2,7 +2,7 @@ import React from 'react';
 import {shell, remote} from 'electron';
 import {withRouter, NavLink} from 'react-router-dom';
 import {connect} from 'react-redux';
-import {Container, Segment, Header, Button, Input, Form, Select, Divider, Checkbox} from 'semantic-ui-react';
+import {Container, Segment, Header, Button, Input, Form, Select, Divider, Checkbox, Icon} from 'semantic-ui-react';
 import storage from 'electron-json-storage';
 import Discord from 'discord.js';
 import Database from '../../watchdog/database';
@@ -33,7 +33,13 @@ const databaseOptions = [
 ];
 
 function isEmpty(value) {
-    if (!value || value === '') {
+    if (!value) {
+        return true;
+    }
+
+    if (Array.isArray(value) && value.length === 0) {
+        return true;
+    } else if (value === '') {
         return true;
     }
 
@@ -42,7 +48,7 @@ function isEmpty(value) {
 
 class Configure extends React.Component {
     state = {
-        logFileDirectory: '',
+        logFileDirectories: [],
         discordToken: '',
         discordServerID: '',
         discordChannelID: '',
@@ -221,7 +227,7 @@ class Configure extends React.Component {
 
     render() {
         const {
-            logFileDirectory,
+            logFileDirectories,
             discordToken,
             discordServerID,
             discordChannelID,
@@ -253,13 +259,13 @@ class Configure extends React.Component {
                         <Form.Group widths='equal'>
                             <Form.Field>
                                 <label>Select the DayZ SA .ADM log file directory</label>
-                                <Input
-                                    type="text"
-                                    placeholder="Click here to select file"
-                                    value={logFileDirectory}
-                                    onClick={() => this.$file.current.click()}
-                                />
                                 <p>This is where the DayZServer_x64.ADM / DayZServer_x64_*.ADM files are located.</p>
+                                <Button
+                                    color="blue"
+                                    onClick={() => this.$file.current.click()}
+                                >
+                                    Add Directory
+                                </Button>
                                 <input
                                     type="file"
                                     webkitdirectory="yes"
@@ -270,15 +276,44 @@ class Configure extends React.Component {
                                         const file = event.target.files[0];
 
                                         if (!file || !file.path) {
-                                            this.setState({logFileDirectory: ''});
                                             return;
                                         }
 
-                                        this.setState({
-                                            logFileDirectory: event.target.files[0].path,
-                                        });
+                                        const newLogFileDirectories = [...logFileDirectories];
+                                        newLogFileDirectories.push(event.target.files[0].path);
+                                        this.setState({logFileDirectories: newLogFileDirectories});
                                     }}
                                 />
+                            </Form.Field>
+                            <Form.Field>
+                                <label>List of directories to watch</label>
+                                {
+                                    logFileDirectories.length < 1 &&
+                                    <p>No directories selected.</p>
+                                }
+                                {
+                                    logFileDirectories.length > 0 &&
+                                    logFileDirectories.map((dir) => {
+                                        return (
+                                            <Input
+                                                key={dir}
+                                                value={dir}
+                                                readOnly
+                                                action={{
+                                                    color: 'red',
+                                                    icon: 'trash',
+                                                    onClick: () => {
+                                                        const newLogFileDirectories = [...logFileDirectories];
+
+                                                        this.setState({
+                                                            logFileDirectories: newLogFileDirectories.filter((oDir) => oDir !== dir),
+                                                        });
+                                                    },
+                                                }}
+                                            />
+                                        );
+                                    })
+                                }
                             </Form.Field>
                         </Form.Group>
                     </Segment>
@@ -396,7 +431,7 @@ class Configure extends React.Component {
                         <Button
                             color='green'
                             onClick={this.save}
-                            disabled={(isEmpty(logFileDirectory) || isEmpty(discordToken) || isEmpty(discordServerID) || isEmpty(discordChannelID))}
+                            disabled={(isEmpty(logFileDirectories) || isEmpty(discordToken) || isEmpty(discordServerID) || isEmpty(discordChannelID))}
                         >Save & Continue</Button>
                     </div>
                 </Form>

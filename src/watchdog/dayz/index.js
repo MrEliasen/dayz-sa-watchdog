@@ -30,6 +30,7 @@ const TEST_FALL_DAMAGE = /([0-9]{2}:[0-9]{2}:[0-9]{2}) \| Player ".+" \(id=(.+) 
  * DayZ manager
  */
 class DayZParser {
+    watchers = [];
     loaded = false;
     // keeps track of all unimported logs
     unImportedLogs = [];
@@ -49,65 +50,74 @@ class DayZParser {
      * Loads the component
      */
     async load() {
-        await this.tailLogFile();
+        await this.tailLogFiles();
     }
 
     /**
      * Reads the log file, and trails it for any changes
      * @return {Promise}
      */
-    tailLogFile = async () => {
-        const dirExists = fs.existsSync(this.server.config.logFileDirectory);
-
-        if (!dirExists) {
-            this.server.logger(this.name, 'The directory you specified in your settings is unreadable.');
-            return;
-        }
-
+    tailLogFiles = async () => {
         this.importTimer = null;
-        this.watcher = chokidar.watch(this.server.config.logFileDirectory);
-        this.watcher
-            .on('add', (filePath, stats) => {
-                const filePieces = filePath.split(path.sep);
-                const file = filePieces[filePieces.length - 1];
-                const ext = path.extname(file);
 
-                if (ext !== '.ADM') {
-                    this.watcher.unwatch(filePath);
+        this.server.config.logFileDirectories.forEach((dir, index) => {
+            try {
+                const dirExists = fs.existsSync(dir);
+
+                if (!dirExists) {
+                    this.server.logger(this.name, `The directory "${dir}" is unreadable.`);
                     return;
                 }
 
-                if (file === 'DayZServer_x64.ADM') {
-                    if (this.loaded) {
-                        this.server.logger(this.name, 'Server restart detected.');
-                    }
-                    return;
-                }
+                const watcher = chokidar.watch(dir);
+                watcher
+                    .on('add', (filePath, stats) => {
+                        const filePieces = filePath.split(path.sep);
+                        const file = filePieces[filePieces.length - 1];
+                        const ext = path.extname(file);
 
-                this.import(file);
+                        if (ext !== '.ADM') {
+                            watcher.unwatch(filePath);
+                            return;
+                        }
 
-                if (this.importTimer !== null) {
-                    try {
-                        clearTimeout(this.importTimer);
-                    } catch (err) {
-                        // dont care
-                    }
-                }
+                        if (file === 'DayZServer_x64.ADM') {
+                            if (this.loaded) {
+                                this.server.logger(this.name, 'Server restart detected.');
+                            }
+                            return;
+                        }
 
-                this.importTimer = setTimeout(() => {
-                    this.importTimer = null;
-                    this.recursiveWaitImport();
-                }, 1000);
-            });
+                        this.import(dir, file);
 
-        this.server.logger(this.name, `Tracking .ADM files in the "${this.server.config.logFileDirectory}" directory.`);
+                        if (this.importTimer !== null) {
+                            try {
+                                clearTimeout(this.importTimer);
+                            } catch (err) {
+                                // dont care
+                            }
+                        }
+
+                        this.importTimer = setTimeout(() => {
+                            this.importTimer = null;
+                            this.recursiveWaitImport();
+                        }, 1000);
+                    });
+
+                this.watchers.push(watcher);
+                this.server.logger(this.name, `Tracking .ADM files in the "${dir}" directory.`);
+            } catch (err) {
+                console.log(err);
+            }
+        });
+
         // bit of a hack i know..
         setTimeout(() => {
             this.loaded = true;
         }, 2000);
     }
 
-    async import(filename) {
+    async import(dir, filename) {
         this.server.database.models.logs
             .where('file_name', filename)
             .fetch()
@@ -116,7 +126,7 @@ class DayZParser {
                     return;
                 }
 
-                this.unImportedLogs.push(filename);
+                this.unImportedLogs.push({dir, filename});
                 this.unimportedLogsTotal++;
             }).catch((err) => {
                 console.error(err);
@@ -134,14 +144,17 @@ class DayZParser {
             return;
         }
 
-        const filePath = this.unImportedLogs.shift();
-        await this.importLogFile(filePath);
+        const file = this.unImportedLogs.shift();
+        await this.importLogFile(file);
         setTimeout(this.recursiveWaitImport, 150);
     }
 
-    importLogFile(filename) {
+    importLogFile(file) {
+        const filename = file.filename;
+        const dir = file.dir;
+
         return new Promise((resolve, reject) => {
-            const fullFilePath = `${this.server.config.logFileDirectory}/${filename}`;
+            const fullFilePath = `${dir}/${filename}`;
             const linkRequests = [];
             const logsLeft = this.unimportedLogsTotal - this.unImportedLogs.length;
 
@@ -154,7 +167,7 @@ class DayZParser {
 
                 const lines = data.toString().split('\n');
 
-                this.server.logger(this.name, `${logsLeft}/${this.unimportedLogsTotal} | Importing ${lines.length} lines from "${filename}"..`);
+                this.server.logger(this.name, `${logsLeft}/${this.unimportedLogsTotal} | Importing ${lines.length} lines from "${dir}/${filename}"..`);
                 if (lines.length <= 0) {
                     resolve();
                     return;

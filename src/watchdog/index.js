@@ -48,16 +48,20 @@ class Watchdog extends EventEmitter {
     }
 
     async shutdown() {
-        await this.logger(this.dayz.name, 'Stopping file watcher..');
+        await this.logger(this.dayz.name, 'Stopping file watchers..');
+
+        await this.dayz.watchers.map(async (watcher) => {
+            try {
+                watcher.close();
+            } catch (err) {
+                // we do not care..
+            }
+
+            return true;
+        });
 
         try {
-            await this.dayz.watcher.close();
-        } catch (err) {
-            // we do not care..
-        }
-
-        try {
-            clearTimeout(this.dayz.retryDirectoryTimer);
+            clearTimeout(this.dayz.importTimer);
         } catch (err) {
             // we do not care..
         }
