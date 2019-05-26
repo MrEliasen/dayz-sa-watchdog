@@ -61,6 +61,7 @@ class Configure extends React.Component {
         databaseUser: '',
         databasePassword: '',
         permissions: '',
+        resetRole: '',
         roles: [],
         players: [],
         ignore: [],
@@ -240,6 +241,7 @@ class Configure extends React.Component {
             databaseUser,
             databasePassword,
             permissions,
+            resetRole,
             roles,
             players,
             ignore,
@@ -378,6 +380,17 @@ class Configure extends React.Component {
                                 />
                                 <p><small>Select the admin/mod role who should have access to use the !logs command.</small></p>
                             </Form.Field>
+                            <Form.Field>
+                                <label>Role with access to !reset</label>
+                                <Select
+                                    options={roles}
+                                    value={resetRole}
+                                    onChange={(e, {value}) => this.setState({resetRole: value})}
+                                />
+                                <p><small>Select the admin/mod role who should have access to use the !reset command.</small></p>
+                            </Form.Field>
+                        </Form.Group>
+                        <Form.Group widths='equal'>
                             <Form.Field>
                                 <Form.Field>
                                     <label>Fetch the latest list of user roles</label>

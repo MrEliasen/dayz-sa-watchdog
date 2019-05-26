@@ -104,12 +104,55 @@ class DiscordBot {
                 case '!logs':
                     this.getLogs(message);
                     return;
+                case '!reset':
+                    this.resetStats(message);
+                    return;
                 default:
                     this.server.stats.handleMessages(message);
                     return;
             }
         } catch (err) {
             this.server.logger(this.name, err);
+        }
+    }
+
+    async resetStats(message) {
+        try {
+            const {resetRole, logFileDirectories} = this.server.config;
+            const member = await this.guild.fetchMember(message.author);
+            const hasRole = member.roles.get(resetRole);
+
+            if (!hasRole) {
+                return;
+            }
+
+            message.channel
+                .send("Are you sure you wish to reset all player stats?.\nReact with a :thumbsup: **within 10 seconds** to confirm.")
+                .then((confirmMessage) => {
+                    confirmMessage.awaitReactions((reaction, user) => user.id === message.author.id, {time: 5000})
+                        .then(async (collected) => {
+                            const reaction = collected.first();
+
+                            if (!reaction) {
+                                message.channel.send('Confirmation not received.');
+                                return;
+                            }
+
+                            if (reaction.emoji.identifier !== '%F0%9F%91%8D') {
+                                message.channel.send('Confirmation not received.');
+                                return;
+                            }
+
+                            await this.server.database.connection.raw('DELETE FROM damage');
+                            await this.server.database.connection.raw('DELETE FROM killed');
+                            await this.server.database.connection.raw('DELETE FROM logs');
+
+                            message.channel.send('Player stats wiped.');
+                        })
+                        .catch(console.error);
+                });
+        } catch (err) {
+            console.log(err);
         }
     }
 
