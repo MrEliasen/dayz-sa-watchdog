@@ -1,6 +1,6 @@
 {
     "name": "dayz-sa-watchdog",
-    "version": "0.6.7",
+    "version": "0.6.8",
     "description": "",
     "main": "main.js",
     "scripts": {
