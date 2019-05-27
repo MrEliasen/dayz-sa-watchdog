@@ -129,7 +129,7 @@ class DiscordBot {
             message.channel
                 .send("Are you sure you wish to reset all player stats?.\nReact with a :thumbsup: **within 10 seconds** to confirm.")
                 .then((confirmMessage) => {
-                    confirmMessage.awaitReactions((reaction, user) => user.id === message.author.id, {time: 5000})
+                    confirmMessage.awaitReactions((reaction, user) => user.id === message.author.id, {time: 10000})
                         .then(async (collected) => {
                             const reaction = collected.first();
 
